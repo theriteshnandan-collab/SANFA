@@ -16,9 +16,9 @@ import numpy as np
 from PIL import Image, ImageEnhance
 
 # ---------- Config ----------
-EPSILON = 10.0 / 255.0      # Perturbation budget (invisible at this level)
-ITERATIONS = 20             # PGD iterations (more = better attack)
-STEP_SIZE = 2.5 / 255.0     # Per-step size
+EPSILON = 4.0 / 255.0       # Perturbation budget (±4 pixels — invisible)
+ITERATIONS = 30             # More iterations compensate for lower epsilon
+STEP_SIZE = 1.0 / 255.0     # Per-step size
 CLIP_SIZE = 224
 
 def sha256_file(path):
@@ -111,7 +111,6 @@ def real_adversarial_attack(img, target_img=None):
         ).item()
     
     # Convert perturbation to full-resolution
-    # Get the delta in pixel space (0-255 range)
     delta_pixels = (delta.squeeze(0).permute(1, 2, 0).detach().numpy() * 255.0)
     
     # Resize delta to original image size
@@ -123,13 +122,29 @@ def real_adversarial_attack(img, target_img=None):
         ).resize((w, h), Image.BICUBIC)
         delta_full[:, :, c] = np.array(ch, dtype=np.float32) - 128.0
     
-    # Clamp to epsilon range in pixel space
-    max_noise = EPSILON * 255.0  # ~10 pixels
+    # Clamp to epsilon range
+    max_noise = EPSILON * 255.0
     delta_full = np.clip(delta_full, -max_noise, max_noise)
+    
+    # === PERCEPTUAL MASK: hide noise in smooth areas ===
+    # Use Sobel edge detection to find textured regions
+    from PIL import ImageFilter
+    gray = img.convert('L')
+    edges_x = np.array(gray.filter(ImageFilter.Kernel((3,3), [-1,0,1,-2,0,2,-1,0,1], scale=1, offset=128)), dtype=np.float32) - 128
+    edges_y = np.array(gray.filter(ImageFilter.Kernel((3,3), [-1,-2,-1,0,0,0,1,2,1], scale=1, offset=128)), dtype=np.float32) - 128
+    edge_magnitude = np.sqrt(edges_x**2 + edges_y**2)
+    
+    # Normalize to 0-1 range, then set minimum mask to 0.15 (even smooth areas get a tiny bit)
+    mask = edge_magnitude / max(edge_magnitude.max(), 1)
+    mask = np.clip(mask * 3.0, 0.15, 1.0)  # Amplify edges, floor at 15%
+    mask_3d = np.stack([mask, mask, mask], axis=2)
+    
+    # Apply mask: full noise on edges/textures, 15% noise on smooth skin/bokeh
+    delta_masked = delta_full * mask_3d
     
     # Apply to original image
     orig_array = np.array(img, dtype=np.float32)
-    protected_array = np.clip(orig_array + delta_full, 0, 255).astype(np.uint8)
+    protected_array = np.clip(orig_array + delta_masked, 0, 255).astype(np.uint8)
     protected_img = Image.fromarray(protected_array)
     
     # Heatmap
