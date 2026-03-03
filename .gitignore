@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.next/
+target/
+
+# ONNX model (too large for git, download on first launch)
+engine/models/
+*.onnx
+*.onnx.data
+
+# Build artifacts
+src-tauri/target/
+*.exe
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+engine/build/
+engine/dist/
+*.spec
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
