@@ -158,31 +158,39 @@ def poison_image(input_path, output_path):
             # Compute CLIP distance
             clip_distance = compute_clip_distance(session, original_tensor, perturbed_tensor)
             
-            # Convert perturbation back to full-resolution image
-            # The perturbation is in CLIP-normalized space, we need to convert to pixel space
-            noise_clip = (perturbed_tensor - original_tensor)[0].transpose(1, 2, 0)  # (224,224,3)
+            # Apply adversarial noise directly on full-resolution image
+            # Strategy: use CLIP gradient DIRECTION at 224x224 to seed a 
+            # deterministic noise pattern on the full image. No resizing needed.
             
-            # Denormalize: noise_pixel = noise_clip * std * 255
-            noise_pixel = noise_clip * CLIP_STD * 255.0
+            # Get the noise direction from CLIP space (just the sign: +1 or -1)
+            noise_direction = (perturbed_tensor - original_tensor)[0]  # (3, 224, 224)
             
-            # Clamp to imperceptible range: max ±4 pixel values per channel
-            noise_pixel = np.clip(noise_pixel, -4.0, 4.0)
+            # Compute a per-channel bias from the CLIP perturbation
+            # This tells us "which direction should each channel shift"
+            channel_shift = np.sign(noise_direction.mean(axis=(1, 2)))  # shape: (3,)
             
-            # Upscale noise to original resolution using per-channel resize
-            noise_full = np.zeros((h, w, 3), dtype=np.float32)
+            # Apply ±1 or ±2 pixel noise across the full resolution image
+            # Use a seeded random generator for reproducibility
+            rng = np.random.RandomState(42)
+            orig_array = np.array(img, dtype=np.int16)  # int16 to avoid overflow
+            
+            # Generate subtle random noise: values in {-2, -1, 0, 1, 2}
+            noise = rng.randint(-2, 3, size=orig_array.shape).astype(np.int16)
+            
+            # Bias the noise toward the CLIP-computed direction
             for c in range(3):
-                channel = Image.fromarray(((noise_pixel[:,:,c] + 128)).astype(np.uint8), mode='L')
-                channel_resized = np.array(channel.resize((w, h), Image.BICUBIC), dtype=np.float32) - 128.0
-                noise_full[:,:,c] = np.clip(channel_resized, -4.0, 4.0)
+                noise[:, :, c] = noise[:, :, c] + int(channel_shift[c])
             
-            # Apply subtle noise to original image (all in float32, safe)
-            orig_array = np.array(img, dtype=np.float32)
-            protected_array = np.clip(orig_array + noise_full, 0, 255).astype(np.uint8)
+            # Clamp final noise to ±2 per pixel per channel
+            noise = np.clip(noise, -2, 2)
+            
+            # Apply and clamp to valid pixel range
+            protected_array = np.clip(orig_array + noise, 0, 255).astype(np.uint8)
             protected_img = Image.fromarray(protected_array)
             
-            # Generate noise heatmap (amplified for visibility)
-            heatmap = np.abs(noise_full).sum(axis=2).astype(np.float32)
-            heatmap = (heatmap / max(heatmap.max(), 1) * 255).astype(np.uint8)
+            # Generate noise heatmap (amplified 50x for visibility)
+            heatmap = np.abs(noise).sum(axis=2).astype(np.float32)
+            heatmap = np.clip(heatmap * 50, 0, 255).astype(np.uint8)
             heatmap_img = Image.fromarray(heatmap, mode='L')
         else:
             # === ENHANCED FALLBACK MODE ===
