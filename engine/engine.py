@@ -159,25 +159,30 @@ def poison_image(input_path, output_path):
             clip_distance = compute_clip_distance(session, original_tensor, perturbed_tensor)
             
             # Convert perturbation back to full-resolution image
-            # Scale the noise pattern from 224x224 to original resolution
-            noise_small = (perturbed_tensor - original_tensor)[0].transpose(1, 2, 0)  # CHW -> HWC
-            noise_small = noise_small * CLIP_STD + 0  # Denormalize the noise
+            # The perturbation is in CLIP-normalized space, we need to convert to pixel space
+            noise_clip = (perturbed_tensor - original_tensor)[0].transpose(1, 2, 0)  # (224,224,3)
             
-            # Upscale noise to original resolution
-            noise_img = Image.fromarray(
-                np.clip(noise_small * 255, -32, 32).astype(np.int8).astype(np.float32).astype(np.uint8),
-                mode='RGB'
-            ).resize((w, h), Image.BICUBIC)
-            noise_array = np.array(noise_img, dtype=np.float32)
+            # Denormalize: noise_pixel = noise_clip * std * 255
+            noise_pixel = noise_clip * CLIP_STD * 255.0
             
-            # Apply noise to original image
+            # Clamp to imperceptible range: max ±4 pixel values per channel
+            noise_pixel = np.clip(noise_pixel, -4.0, 4.0)
+            
+            # Upscale noise to original resolution using per-channel resize
+            noise_full = np.zeros((h, w, 3), dtype=np.float32)
+            for c in range(3):
+                channel = Image.fromarray(((noise_pixel[:,:,c] + 128)).astype(np.uint8), mode='L')
+                channel_resized = np.array(channel.resize((w, h), Image.BICUBIC), dtype=np.float32) - 128.0
+                noise_full[:,:,c] = np.clip(channel_resized, -4.0, 4.0)
+            
+            # Apply subtle noise to original image (all in float32, safe)
             orig_array = np.array(img, dtype=np.float32)
-            protected_array = np.clip(orig_array + noise_array - 128, 0, 255).astype(np.uint8)
+            protected_array = np.clip(orig_array + noise_full, 0, 255).astype(np.uint8)
             protected_img = Image.fromarray(protected_array)
             
-            # Generate noise heatmap
-            heatmap = np.abs(noise_array - 128).sum(axis=2)
-            heatmap = (heatmap / heatmap.max() * 255).astype(np.uint8) if heatmap.max() > 0 else heatmap.astype(np.uint8)
+            # Generate noise heatmap (amplified for visibility)
+            heatmap = np.abs(noise_full).sum(axis=2).astype(np.float32)
+            heatmap = (heatmap / max(heatmap.max(), 1) * 255).astype(np.uint8)
             heatmap_img = Image.fromarray(heatmap, mode='L')
         else:
             # === ENHANCED FALLBACK MODE ===
