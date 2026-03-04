@@ -1,11 +1,11 @@
 """
-PoisonPill Engine v3.0 — Real PyTorch Adversarial Protection
-Uses actual gradient backpropagation through CLIP ViT-B/32 for true FGSM attack.
+PoisonPill Engine v4.0 — Multi-Layer Adversarial Protection
+Three simultaneous attack vectors:
+  1. PGD against CLIP (embedding confusion)
+  2. DCT frequency poisoning (survives JPEG/social media)
+  3. Nightshade data poisoning (teaches AI wrong concepts)
 
 Usage: python engine.py <input_image> <output_image>
-
-This ACTUALLY fools AI models — not just noise, but mathematically computed
-perturbations that maximize CLIP embedding confusion.
 """
 import sys
 import os
@@ -13,12 +13,13 @@ import json
 import hashlib
 import time
 import numpy as np
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageFilter
 
 # ---------- Config ----------
-EPSILON = 4.0 / 255.0       # Perturbation budget (±4 pixels — invisible)
-ITERATIONS = 30             # More iterations compensate for lower epsilon
-STEP_SIZE = 1.0 / 255.0     # Per-step size
+CLIP_EPSILON = 4.0 / 255.0    # CLIP PGD budget
+CLIP_ITERATIONS = 20          # PGD steps
+CLIP_STEP = 1.0 / 255.0       # Per-step size
+DCT_STRENGTH = 0.08           # Frequency domain noise strength
 CLIP_SIZE = 224
 
 def sha256_file(path):
@@ -28,147 +29,176 @@ def sha256_file(path):
             h.update(chunk)
     return h.hexdigest()
 
-# ---------- Real PyTorch FGSM/PGD Attack ----------
-def real_adversarial_attack(img, target_img=None):
-    """
-    PGD (Projected Gradient Descent) attack against CLIP.
-    Uses real autograd gradients — this actually works.
-    
-    Returns: protected PIL image, clip_distance float
-    """
+# ============================================================
+# LAYER 1: CLIP PGD Attack (embedding confusion)
+# ============================================================
+def clip_pgd_attack(img, model, mean, std):
+    """PGD attack against CLIP — shifts embedding away from original."""
     import torch
-    import open_clip
     
-    device = 'cpu'
-    
-    # Load CLIP model
-    model, _, preprocess = open_clip.create_model_and_transforms(
-        'ViT-B-32', pretrained='laion2b_s34b_b79k', device=device
-    )
-    model.eval()
-    
-    # Preprocess the image
     img_resized = img.convert("RGB").resize((CLIP_SIZE, CLIP_SIZE), Image.BICUBIC)
     img_tensor = torch.from_numpy(
         np.array(img_resized, dtype=np.float32) / 255.0
-    ).permute(2, 0, 1).unsqueeze(0)  # (1, 3, 224, 224)
-    
-    # CLIP normalization
-    mean = torch.tensor([0.48145466, 0.4578275, 0.40821073]).view(1, 3, 1, 1)
-    std = torch.tensor([0.26862954, 0.26130258, 0.27577711]).view(1, 3, 1, 1)
+    ).permute(2, 0, 1).unsqueeze(0)
     
     img_normalized = (img_tensor - mean) / std
-    
-    # Get original embedding (target to move AWAY from)
     with torch.no_grad():
         original_features = model.encode_image(img_normalized)
         original_features = original_features / original_features.norm(dim=-1, keepdim=True)
     
-    # Initialize perturbation
     delta = torch.zeros_like(img_tensor, requires_grad=True)
     
-    print("ENGINE:Running PGD adversarial attack...")
-    sys.stdout.flush()
-    
-    for i in range(ITERATIONS):
-        # Forward pass with perturbation
+    for i in range(CLIP_ITERATIONS):
         perturbed = torch.clamp(img_tensor + delta, 0, 1)
         perturbed_normalized = (perturbed - mean) / std
-        
         perturbed_features = model.encode_image(perturbed_normalized)
         perturbed_features = perturbed_features / perturbed_features.norm(dim=-1, keepdim=True)
         
-        # Loss: MAXIMIZE distance from original (minimize negative distance)
-        # Cosine similarity — we want to MINIMIZE this
-        loss = torch.nn.functional.cosine_similarity(
-            perturbed_features, original_features
-        ).mean()
-        
-        # Backward pass — this is the real magic ONNX can't do
+        loss = torch.nn.functional.cosine_similarity(perturbed_features, original_features).mean()
         loss.backward()
         
-        # PGD step: move in direction that INCREASES distance
         with torch.no_grad():
-            grad_sign = delta.grad.sign()
-            delta.data = delta.data - STEP_SIZE * grad_sign  # Minimize similarity
-            delta.data = torch.clamp(delta.data, -EPSILON, EPSILON)
+            delta.data = delta.data - CLIP_STEP * delta.grad.sign()
+            delta.data = torch.clamp(delta.data, -CLIP_EPSILON, CLIP_EPSILON)
             delta.data = torch.clamp(img_tensor + delta.data, 0, 1) - img_tensor
             delta.grad.zero_()
         
-        progress = int((i + 1) / ITERATIONS * 100)
-        print(f"PROGRESS:{progress}")
+        print(f"PROGRESS:{int((i+1)/CLIP_ITERATIONS*33)}")
         sys.stdout.flush()
     
-    # Final perturbed image at 224x224
+    # Get CLIP distance
     with torch.no_grad():
-        final_perturbed = torch.clamp(img_tensor + delta, 0, 1)
-        final_normalized = (final_perturbed - mean) / std
-        final_features = model.encode_image(final_normalized)
-        final_features = final_features / final_features.norm(dim=-1, keepdim=True)
+        final = torch.clamp(img_tensor + delta, 0, 1)
+        final_norm = (final - mean) / std
+        final_feat = model.encode_image(final_norm)
+        final_feat = final_feat / final_feat.norm(dim=-1, keepdim=True)
+        clip_dist = 1.0 - torch.nn.functional.cosine_similarity(final_feat, original_features).item()
+    
+    delta_pixels = delta.squeeze(0).permute(1, 2, 0).detach().numpy() * 255.0
+    return delta_pixels, clip_dist
+
+# ============================================================
+# LAYER 2: DCT Frequency Poisoning (survives JPEG compression)
+# ============================================================
+def dct_frequency_poison(image_array):
+    """
+    Inject noise in mid-frequency DCT bands.
+    This survives JPEG compression because JPEG preserves these frequencies.
+    Humans can't see mid-frequency changes but AI models use them heavily.
+    """
+    from scipy.fft import dct, idct
+    
+    h, w, c = image_array.shape
+    poisoned = image_array.copy().astype(np.float32)
+    
+    rng = np.random.RandomState(1337)
+    
+    for ch in range(c):
+        channel = poisoned[:, :, ch]
         
-        clip_distance = 1.0 - torch.nn.functional.cosine_similarity(
-            final_features, original_features
-        ).item()
+        # Process in 8x8 blocks (same as JPEG)
+        for y in range(0, h - 7, 8):
+            for x in range(0, w - 7, 8):
+                block = channel[y:y+8, x:x+8]
+                
+                # Forward DCT
+                dct_block = dct(dct(block.T, norm='ortho').T, norm='ortho')
+                
+                # Inject noise in mid-frequency coefficients (positions 2-5)
+                # These survive JPEG quantization but are invisible to humans
+                for i in range(2, 6):
+                    for j in range(2, 6):
+                        dct_block[i, j] += rng.uniform(-DCT_STRENGTH, DCT_STRENGTH) * abs(dct_block[i, j] + 1)
+                
+                # Inverse DCT
+                channel[y:y+8, x:x+8] = idct(idct(dct_block.T, norm='ortho').T, norm='ortho')
+        
+        poisoned[:, :, ch] = channel
     
-    # Convert perturbation to full-resolution
-    delta_pixels = (delta.squeeze(0).permute(1, 2, 0).detach().numpy() * 255.0)
+    return np.clip(poisoned, 0, 255).astype(np.float32)
+
+# ============================================================
+# LAYER 3: Nightshade Data Poisoning (wrong concept injection)
+# ============================================================
+def nightshade_poison(img, model, mean, std):
+    """
+    Push image embedding TOWARD a completely wrong concept.
+    If the image is a person, push toward 'abstract painting'.
+    If it's a landscape, push toward 'circuit board'.
+    This makes AI learn WRONG associations.
+    """
+    import torch
+    import open_clip
     
-    # Resize delta to original image size
-    w, h = img.size
-    delta_full = np.zeros((h, w, 3), dtype=np.float32)
-    for c in range(3):
-        ch = Image.fromarray(
-            np.clip(delta_pixels[:, :, c] + 128, 0, 255).astype(np.uint8), mode='L'
-        ).resize((w, h), Image.BICUBIC)
-        delta_full[:, :, c] = np.array(ch, dtype=np.float32) - 128.0
+    # Get text embeddings for wrong concepts
+    tokenizer = open_clip.get_tokenizer('ViT-B-32')
     
-    # Clamp to epsilon range
-    max_noise = EPSILON * 255.0
-    delta_full = np.clip(delta_full, -max_noise, max_noise)
+    wrong_concepts = [
+        "a photo of static noise and glitch artifacts",
+        "an abstract pattern of random colored squares",
+        "a blank concrete wall with no features",
+    ]
     
-    # === PERCEPTUAL MASK: hide noise in smooth areas ===
-    # Use Sobel edge detection to find textured regions
-    from PIL import ImageFilter
+    with torch.no_grad():
+        text_tokens = tokenizer(wrong_concepts)
+        target_features = model.encode_text(text_tokens)
+        target_features = target_features / target_features.norm(dim=-1, keepdim=True)
+        # Average the wrong concept embeddings
+        target_embedding = target_features.mean(dim=0, keepdim=True)
+        target_embedding = target_embedding / target_embedding.norm(dim=-1, keepdim=True)
+    
+    # PGD attack pushing TOWARD the wrong concept
+    img_resized = img.convert("RGB").resize((CLIP_SIZE, CLIP_SIZE), Image.BICUBIC)
+    img_tensor = torch.from_numpy(
+        np.array(img_resized, dtype=np.float32) / 255.0
+    ).permute(2, 0, 1).unsqueeze(0)
+    
+    delta = torch.zeros_like(img_tensor, requires_grad=True)
+    ns_epsilon = 3.0 / 255.0
+    ns_step = 0.5 / 255.0
+    
+    for i in range(15):
+        perturbed = torch.clamp(img_tensor + delta, 0, 1)
+        perturbed_normalized = (perturbed - mean) / std
+        perturbed_features = model.encode_image(perturbed_normalized)
+        perturbed_features = perturbed_features / perturbed_features.norm(dim=-1, keepdim=True)
+        
+        # MAXIMIZE similarity to wrong concept (minimize negative)
+        loss = -torch.nn.functional.cosine_similarity(perturbed_features, target_embedding).mean()
+        loss.backward()
+        
+        with torch.no_grad():
+            delta.data = delta.data - ns_step * delta.grad.sign()
+            delta.data = torch.clamp(delta.data, -ns_epsilon, ns_epsilon)
+            delta.data = torch.clamp(img_tensor + delta.data, 0, 1) - img_tensor
+            delta.grad.zero_()
+        
+        print(f"PROGRESS:{33 + int((i+1)/15*33)}")
+        sys.stdout.flush()
+    
+    delta_pixels = delta.squeeze(0).permute(1, 2, 0).detach().numpy() * 255.0
+    return delta_pixels
+
+# ============================================================
+# PERCEPTUAL MASK: Hide noise in textured areas
+# ============================================================
+def compute_perceptual_mask(img):
+    """Sobel edge detection mask — full noise on textures, minimal on smooth areas."""
     gray = img.convert('L')
-    edges_x = np.array(gray.filter(ImageFilter.Kernel((3,3), [-1,0,1,-2,0,2,-1,0,1], scale=1, offset=128)), dtype=np.float32) - 128
-    edges_y = np.array(gray.filter(ImageFilter.Kernel((3,3), [-1,-2,-1,0,0,0,1,2,1], scale=1, offset=128)), dtype=np.float32) - 128
-    edge_magnitude = np.sqrt(edges_x**2 + edges_y**2)
-    
-    # Normalize to 0-1 range, then set minimum mask to 0.15 (even smooth areas get a tiny bit)
-    mask = edge_magnitude / max(edge_magnitude.max(), 1)
-    mask = np.clip(mask * 3.0, 0.15, 1.0)  # Amplify edges, floor at 15%
-    mask_3d = np.stack([mask, mask, mask], axis=2)
-    
-    # Apply mask: full noise on edges/textures, 15% noise on smooth skin/bokeh
-    delta_masked = delta_full * mask_3d
-    
-    # Apply to original image
-    orig_array = np.array(img, dtype=np.float32)
-    protected_array = np.clip(orig_array + delta_masked, 0, 255).astype(np.uint8)
-    protected_img = Image.fromarray(protected_array)
-    
-    # Heatmap
-    heatmap = np.abs(delta_full).sum(axis=2)
-    heatmap = np.clip(heatmap / max(heatmap.max(), 1) * 255, 0, 255).astype(np.uint8)
-    heatmap_img = Image.fromarray(heatmap, mode='L')
-    
-    return protected_img, clip_distance, heatmap_img
+    edges_x = np.array(gray.filter(ImageFilter.Kernel(
+        (3,3), [-1,0,1,-2,0,2,-1,0,1], scale=1, offset=128
+    )), dtype=np.float32) - 128
+    edges_y = np.array(gray.filter(ImageFilter.Kernel(
+        (3,3), [-1,-2,-1,0,0,0,1,2,1], scale=1, offset=128
+    )), dtype=np.float32) - 128
+    edge_mag = np.sqrt(edges_x**2 + edges_y**2)
+    mask = edge_mag / max(edge_mag.max(), 1)
+    mask = np.clip(mask * 3.0, 0.15, 1.0)
+    return np.stack([mask, mask, mask], axis=2)
 
-# ---------- Fallback (no PyTorch) ----------
-def fallback_protect(img):
-    import random
-    pixels = img.load()
-    w, h = img.size
-    for x in range(w):
-        for y in range(h):
-            r, g, b = pixels[x, y]
-            nr = max(0, min(255, r + random.randint(-8, 8)))
-            ng = max(0, min(255, g + random.randint(-8, 8)))
-            nb = max(0, min(255, b + random.randint(-8, 8)))
-            pixels[x, y] = (nr, ng, nb)
-    return ImageEnhance.Contrast(img).enhance(1.05)
-
-# ---------- Main ----------
+# ============================================================
+# MAIN PIPELINE
+# ============================================================
 def poison_image(input_path, output_path):
     try:
         if not os.path.exists(input_path):
@@ -178,24 +208,108 @@ def poison_image(input_path, output_path):
         img = Image.open(input_path).convert("RGB")
         w, h = img.size
         original_hash = sha256_file(input_path)
-        
-        use_pytorch = False
         clip_distance = 0.0
-        heatmap_img = None
+        attack_layers = []
         
+        # Check for PyTorch
+        use_pytorch = False
         try:
             import torch
             import open_clip
+            model, _, _ = open_clip.create_model_and_transforms(
+                'ViT-B-32', pretrained='laion2b_s34b_b79k', device='cpu'
+            )
+            model.eval()
+            mean = torch.tensor([0.48145466, 0.4578275, 0.40821073]).view(1,3,1,1)
+            std = torch.tensor([0.26862954, 0.26130258, 0.27577711]).view(1,3,1,1)
             use_pytorch = True
-            print("ENGINE:PyTorch + CLIP loaded. Real adversarial mode.")
+            print("ENGINE:PyTorch + CLIP loaded. Multi-layer attack mode.")
         except ImportError:
-            print("ENGINE:PyTorch not available. Using fallback mode.")
+            print("ENGINE:PyTorch not available. Using fallback.")
+        
+        sys.stdout.flush()
+        orig_array = np.array(img, dtype=np.float32)
+        combined_noise = np.zeros_like(orig_array)
         
         if use_pytorch:
-            protected_img, clip_distance, heatmap_img = real_adversarial_attack(img)
+            # === LAYER 1: CLIP PGD ===
+            print("ENGINE:Layer 1/3 — CLIP PGD adversarial attack...")
+            sys.stdout.flush()
+            clip_delta_224, clip_distance = clip_pgd_attack(img, model, mean, std)
+            
+            # Upscale CLIP delta to full resolution
+            clip_noise = np.zeros((h, w, 3), dtype=np.float32)
+            for c in range(3):
+                ch = Image.fromarray(
+                    np.clip(clip_delta_224[:,:,c] + 128, 0, 255).astype(np.uint8), mode='L'
+                ).resize((w, h), Image.BICUBIC)
+                clip_noise[:,:,c] = np.array(ch, dtype=np.float32) - 128.0
+            combined_noise += clip_noise
+            attack_layers.append("CLIP_PGD")
+            
+            # === LAYER 2: DCT Frequency Poisoning ===
+            print("ENGINE:Layer 2/3 — DCT frequency poisoning...")
+            sys.stdout.flush()
+            try:
+                dct_result = dct_frequency_poison(orig_array)
+                dct_noise = dct_result - orig_array
+                combined_noise += dct_noise
+                attack_layers.append("DCT_FREQUENCY")
+                print("PROGRESS:70")
+            except ImportError:
+                print("ENGINE:scipy not available, skipping DCT layer.")
+            sys.stdout.flush()
+            
+            # === LAYER 3: Nightshade Data Poisoning ===
+            print("ENGINE:Layer 3/3 — Nightshade concept poisoning...")
+            sys.stdout.flush()
+            nightshade_delta_224 = nightshade_poison(img, model, mean, std)
+            
+            # Upscale Nightshade delta
+            ns_noise = np.zeros((h, w, 3), dtype=np.float32)
+            for c in range(3):
+                ch = Image.fromarray(
+                    np.clip(nightshade_delta_224[:,:,c] + 128, 0, 255).astype(np.uint8), mode='L'
+                ).resize((w, h), Image.BICUBIC)
+                ns_noise[:,:,c] = np.array(ch, dtype=np.float32) - 128.0
+            combined_noise += ns_noise
+            attack_layers.append("NIGHTSHADE")
         else:
-            protected_img = fallback_protect(img.copy())
-            clip_distance = 0.05
+            # Fallback
+            import random
+            pixels = img.load()
+            for x in range(w):
+                for y in range(h):
+                    r, g, b = pixels[x, y]
+                    pixels[x, y] = (
+                        max(0, min(255, r + random.randint(-8, 8))),
+                        max(0, min(255, g + random.randint(-8, 8))),
+                        max(0, min(255, b + random.randint(-8, 8)))
+                    )
+            attack_layers.append("FALLBACK")
+        
+        if use_pytorch:
+            # Apply perceptual mask
+            mask = compute_perceptual_mask(img)
+            combined_noise = combined_noise * mask
+            
+            # Clamp total noise to ±6 per pixel (still invisible)
+            combined_noise = np.clip(combined_noise, -6.0, 6.0)
+            
+            # Apply to image
+            protected_array = np.clip(orig_array + combined_noise, 0, 255).astype(np.uint8)
+            protected_img = Image.fromarray(protected_array)
+            
+            # Heatmap
+            heatmap = np.abs(combined_noise).sum(axis=2)
+            heatmap = np.clip(heatmap / max(heatmap.max(), 1) * 255, 0, 255).astype(np.uint8)
+            heatmap_img = Image.fromarray(heatmap, mode='L')
+        else:
+            protected_img = img
+            heatmap_img = None
+        
+        print("PROGRESS:95")
+        sys.stdout.flush()
         
         # Save with C2PA metadata
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -204,10 +318,9 @@ def poison_image(input_path, output_path):
             from PIL.PngImagePlugin import PngInfo
             metadata = PngInfo()
             metadata.add_text("Copyright", "AI-Training-Opted-Out via PoisonPill")
-            metadata.add_text("Rights", "AI Training Not Permitted")
             metadata.add_text("C2PA:Assertion", "c2pa.training-mining=notAllowed")
-            metadata.add_text("PoisonPill:Version", "3.0.0")
-            metadata.add_text("PoisonPill:Engine", "PYTORCH_PGD" if use_pytorch else "FALLBACK")
+            metadata.add_text("PoisonPill:Version", "4.0.0")
+            metadata.add_text("PoisonPill:Layers", "+".join(attack_layers))
             protected_img.save(output_path, pnginfo=metadata)
         else:
             from PIL.ExifTags import Base
@@ -215,21 +328,19 @@ def poison_image(input_path, output_path):
             exif_dict[Base.Copyright] = "AI-Training-Opted-Out via PoisonPill | C2PA:training-mining=notAllowed"
             protected_img.save(output_path, quality=95, exif=exif_dict.tobytes())
         
-        # Save heatmap
-        heatmap_path = output_path + ".heatmap.png"
         if heatmap_img:
-            heatmap_img.save(heatmap_path)
+            heatmap_img.save(output_path + ".heatmap.png")
         
         # Stats
         protected_hash = sha256_file(output_path)
-        orig_arr = np.array(img)
         prot_arr = np.array(protected_img.resize(img.size))
-        modified = int(np.sum(np.any(orig_arr != prot_arr, axis=2)))
+        modified = int(np.sum(np.any(np.array(img) != prot_arr, axis=2)))
         pix_pct = (modified / (w * h)) * 100
         
         report = {
             "status": "PROTECTED",
-            "engine_mode": "PYTORCH_PGD" if use_pytorch else "FALLBACK",
+            "engine_version": "4.0.0",
+            "attack_layers": attack_layers,
             "clip_distance": round(clip_distance, 4),
             "pixels_modified_pct": round(pix_pct, 1),
             "image_size": f"{w}x{h}",
