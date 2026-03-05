@@ -15,11 +15,7 @@ import time
 import numpy as np
 from PIL import Image, ImageEnhance, ImageFilter
 
-# ---------- Config ----------
-CLIP_EPSILON = 4.0 / 255.0    # CLIP PGD budget
-CLIP_ITERATIONS = 20          # PGD steps
-CLIP_STEP = 1.0 / 255.0       # Per-step size
-DCT_STRENGTH = 0.08           # Frequency domain noise strength
+# ---------- Internal Context ----------
 CLIP_SIZE = 224
 
 def sha256_file(path):
@@ -32,7 +28,7 @@ def sha256_file(path):
 # ============================================================
 # LAYER 1: CLIP PGD Attack (embedding confusion)
 # ============================================================
-def clip_pgd_attack(img, model, mean, std):
+def clip_pgd_attack(img, model, mean, std, epsilon, iterations, step_size):
     """PGD attack against CLIP — shifts embedding away from original."""
     import torch
     
@@ -48,7 +44,7 @@ def clip_pgd_attack(img, model, mean, std):
     
     delta = torch.zeros_like(img_tensor, requires_grad=True)
     
-    for i in range(CLIP_ITERATIONS):
+    for i in range(iterations):
         perturbed = torch.clamp(img_tensor + delta, 0, 1)
         perturbed_normalized = (perturbed - mean) / std
         perturbed_features = model.encode_image(perturbed_normalized)
@@ -58,12 +54,12 @@ def clip_pgd_attack(img, model, mean, std):
         loss.backward()
         
         with torch.no_grad():
-            delta.data = delta.data - CLIP_STEP * delta.grad.sign()
-            delta.data = torch.clamp(delta.data, -CLIP_EPSILON, CLIP_EPSILON)
+            delta.data = delta.data - step_size * delta.grad.sign()
+            delta.data = torch.clamp(delta.data, -epsilon, epsilon)
             delta.data = torch.clamp(img_tensor + delta.data, 0, 1) - img_tensor
             delta.grad.zero_()
         
-        print(f"PROGRESS:{int((i+1)/CLIP_ITERATIONS*33)}")
+        print(f"PROGRESS:{int((i+1)/iterations*33)}")
         sys.stdout.flush()
     
     # Get CLIP distance
@@ -80,7 +76,7 @@ def clip_pgd_attack(img, model, mean, std):
 # ============================================================
 # LAYER 2: DCT Frequency Poisoning (survives JPEG compression)
 # ============================================================
-def dct_frequency_poison(image_array):
+def dct_frequency_poison(image_array, dct_strength):
     """
     Inject noise in mid-frequency DCT bands.
     This survives JPEG compression because JPEG preserves these frequencies.
@@ -108,7 +104,7 @@ def dct_frequency_poison(image_array):
                 # These survive JPEG quantization but are invisible to humans
                 for i in range(2, 6):
                     for j in range(2, 6):
-                        dct_block[i, j] += rng.uniform(-DCT_STRENGTH, DCT_STRENGTH) * abs(dct_block[i, j] + 1)
+                        dct_block[i, j] += rng.uniform(-dct_strength, dct_strength) * abs(dct_block[i, j] + 1)
                 
                 # Inverse DCT
                 channel[y:y+8, x:x+8] = idct(idct(dct_block.T, norm='ortho').T, norm='ortho')
@@ -182,7 +178,7 @@ def nightshade_poison(img, model, mean, std):
 # ============================================================
 # PERCEPTUAL MASK: Hide noise in textured areas
 # ============================================================
-def compute_perceptual_mask(img):
+def compute_perceptual_mask(img, mask_strength):
     """Sobel edge detection mask — full noise on textures, minimal on smooth areas."""
     gray = img.convert('L')
     edges_x = np.array(gray.filter(ImageFilter.Kernel(
@@ -193,8 +189,53 @@ def compute_perceptual_mask(img):
     )), dtype=np.float32) - 128
     edge_mag = np.sqrt(edges_x**2 + edges_y**2)
     mask = edge_mag / max(edge_mag.max(), 1)
-    mask = np.clip(mask * 3.0, 0.15, 1.0)
+    
+    if mask_strength > 0:
+        mask = np.clip(mask * mask_strength, 0.15, 1.0)
+    else:
+        mask = np.ones_like(mask) # No mask
+        
     return np.stack([mask, mask, mask], axis=2)
+
+# ============================================================
+# AUTO-ARMOR INTELLIGENCE
+# ============================================================
+def analyze_image_complexity(img):
+    """
+    Scans the image to determine edge density and automatically
+    returns optimized protection parameters.
+    """
+    gray = img.convert('L')
+    edges = np.array(gray.filter(ImageFilter.FIND_EDGES))
+    edge_density = np.mean(edges)
+    
+    if edge_density < 15:
+        # Subtle Shield
+        return 'smooth', edge_density, {
+            'clip_epsilon': 3.0 / 255.0,
+            'clip_iterations': 40,
+            'dct_strength': 0.04,
+            'mask_strength': 4.0, # Very strict mask
+            'clamp_limit': 4.0
+        }
+    elif edge_density > 35:
+        # Maximum Armor
+        return 'textured', edge_density, {
+            'clip_epsilon': 8.0 / 255.0,
+            'clip_iterations': 20,
+            'dct_strength': 0.12,
+            'mask_strength': 1.0, # Weak mask (allow noise everywhere)
+            'clamp_limit': 10.0
+        }
+    else:
+        # Balanced
+        return 'balanced', edge_density, {
+            'clip_epsilon': 5.0 / 255.0,
+            'clip_iterations': 30,
+            'dct_strength': 0.08,
+            'mask_strength': 2.5,
+            'clamp_limit': 6.0
+        }
 
 # ============================================================
 # MAIN PIPELINE
@@ -232,10 +273,19 @@ def poison_image(input_path, output_path):
         combined_noise = np.zeros_like(orig_array)
         
         if use_pytorch:
+            # === LAYER 0: Auto-Armor Intelligence ===
+            complexity_label, density, settings = analyze_image_complexity(img)
+            print(f"ENGINE:Auto-Armor detected {complexity_label.upper()} image (texture density: {density:.1f})")
+            print(f"ENGINE:Optimizing settings -> Epsilon: {settings['clip_epsilon']*255:.1f}px | DCT: {settings['dct_strength']} | Iterations: {settings['clip_iterations']}")
+            sys.stdout.flush()
+        
             # === LAYER 1: CLIP PGD ===
             print("ENGINE:Layer 1/3 — CLIP PGD adversarial attack...")
             sys.stdout.flush()
-            clip_delta_224, clip_distance = clip_pgd_attack(img, model, mean, std)
+            clip_delta_224, clip_distance = clip_pgd_attack(
+                img, model, mean, std, 
+                settings['clip_epsilon'], settings['clip_iterations'], 1.0/255.0
+            )
             
             # Upscale CLIP delta to full resolution
             clip_noise = np.zeros((h, w, 3), dtype=np.float32)
@@ -251,7 +301,7 @@ def poison_image(input_path, output_path):
             print("ENGINE:Layer 2/3 — DCT frequency poisoning...")
             sys.stdout.flush()
             try:
-                dct_result = dct_frequency_poison(orig_array)
+                dct_result = dct_frequency_poison(orig_array, settings['dct_strength'])
                 dct_noise = dct_result - orig_array
                 combined_noise += dct_noise
                 attack_layers.append("DCT_FREQUENCY")
@@ -290,11 +340,12 @@ def poison_image(input_path, output_path):
         
         if use_pytorch:
             # Apply perceptual mask
-            mask = compute_perceptual_mask(img)
+            mask = compute_perceptual_mask(img, settings['mask_strength'])
             combined_noise = combined_noise * mask
             
-            # Clamp total noise to ±6 per pixel (still invisible)
-            combined_noise = np.clip(combined_noise, -6.0, 6.0)
+            # Clamp total noise safely
+            clamp_limit = settings['clamp_limit']
+            combined_noise = np.clip(combined_noise, -clamp_limit, clamp_limit)
             
             # Apply to image
             protected_array = np.clip(orig_array + combined_noise, 0, 255).astype(np.uint8)
