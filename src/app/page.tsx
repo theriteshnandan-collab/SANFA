@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Shield, FolderOpen, ShieldAlert, Terminal as TerminalIcon, ShieldCheck, Zap, Lock, Fingerprint, Eye } from "lucide-react";
+import Link from "next/link";
+import { Shield, FolderOpen, ShieldAlert, Terminal as TerminalIcon, ShieldCheck, Zap, Lock, Fingerprint, Eye, Globe, Activity, Cpu } from "lucide-react";
 
 type LogEntry = {
   time: string;
@@ -168,7 +169,14 @@ export default function Home() {
             </span>
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+          <Link href="/login" style={{ 
+            color: 'rgba(250,250,250,0.4)', fontSize: '0.75rem', textDecoration: 'none', 
+            transition: 'all 0.2s', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 
+          }} onMouseEnter={(e) => e.currentTarget.style.color = '#10b981' } onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(250,250,250,0.4)' }>
+            Protocol Access
+          </Link>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <div style={{
               width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981',
@@ -182,6 +190,7 @@ export default function Home() {
           <span style={{ fontSize: '0.65rem', color: '#3f3f46' }}>v2.0.0 — CLIP Engine</span>
         </div>
       </div>
+    </div>
 
       {/* Stats + Actions Row */}
       <div style={{
@@ -369,6 +378,70 @@ export default function Home() {
             ))}
             <div ref={logsEndRef} />
           </ul>
+        </div>
+      </div>
+
+      {/* MISSION MANIFESTO (Brick 5) */}
+      <div style={{
+        width: '100%', maxWidth: '900px', marginTop: '4rem', padding: '4rem 0',
+        borderTop: '1px solid rgba(255,255,255,0.05)', position: 'relative', zIndex: 1
+      }}>
+        <h2 style={{ fontSize: '2.5rem', fontFamily: 'serif', color: '#fff', marginBottom: '1.5rem', textAlign: 'center' }}>
+          The <span style={{ color: '#10b981' }}>Digital Sovereignty</span> Manifesto
+        </h2>
+        <div style={{ 
+          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', marginTop: '3rem'
+        }}>
+          <div>
+            <h3 style={{ color: '#10b981', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '1rem' }}>The Heart of the Engine</h3>
+            <p style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, fontSize: '1.05rem' }}>
+              We don't just add noise. SANFA Engine V5 performs a deep-tissue frequency scramble on your masterpieces. 
+              By injecting Gradient Poison into the high-frequency domains that neural networks rely on for feature extraction, 
+              we ensure that any model trained on your work suffers from <strong>Neural Collapse</strong>.
+            </p>
+          </div>
+          <div>
+            <h3 style={{ color: '#10b981', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '1rem' }}>Our Absolute Mission</h3>
+            <p style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, fontSize: '1.05rem' }}>
+              In an era of mass scraping, your creativity is your data. Our mission is to provide every artist with a 
+              "God-Level" deterrent. We believe in an internet where human genius is protected by mathematical certainty. 
+              Your masteries are yours. Forever.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* CLOUD ARCHITECTURE (Brick 5) */}
+      <div style={{
+        width: '100%', maxWidth: '900px', marginBottom: '4rem',
+        backgroundColor: 'rgba(24,24,27,0.4)', border: '1px solid rgba(255,255,255,0.05)',
+        borderRadius: '24px', padding: '3rem', position: 'relative', zIndex: 1
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3em' }}>
+            System Architecture
+          </span>
+          <h2 style={{ fontSize: '2rem', color: '#fff', marginTop: '0.5rem' }}>Decoupled Cloud Pipeline</h2>
+          <p style={{ color: 'rgba(255,255,255,0.4)', marginTop: '1rem' }}>Capable of processing 200,000+ protections per month via our serverless GPU enclave.</p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '2rem' }}>
+          {[
+            { label: 'Edge Ingestion', detail: 'Direct-to-S3 pre-signed uploads bypass server bottlenecks.', icon: 'Globe' },
+            { label: 'Job Scheduling', detail: 'Redis-backed queue ensures zero-drop reliability under heavy load.', icon: 'Activity' },
+            { label: 'GPU Core', detail: 'On-demand Modal.com workers utilizing A100/H100 clusters.', icon: 'Zap' }
+          ].map((item, i) => (
+            <div key={i} style={{ 
+              backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
+              padding: '2rem', borderRadius: '16px', textAlign: 'center'
+            }}>
+              <div style={{ color: '#10b981', marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
+                <Zap style={{ width: '24px', height: '24px' }} />
+              </div>
+              <h4 style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '0.75rem' }}>{item.label}</h4>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', lineHeight: 1.6 }}>{item.detail}</p>
+            </div>
+          ))}
         </div>
       </div>
 

@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    output: "export",
-    images: { unoptimized: true },
+    // Dynamic SaaS Mode (Enables /api/protect and /dashboard)
 };
 
 export default nextConfig;

@@ -82,83 +82,100 @@ async def health():
     return {"status": "ok", "engine": "v4.0.0", "gpu": "available"}
 
 
-@app.post("/api/protect")
-async def protect_image(
-    request: Request,
-    file: UploadFile,
-    x_user_id: str = Header(default="anonymous"),
-    x_user_tier: str = Header(default="free"),
+import uuid
+from pydantic import BaseModel
+
+try:
+    from redis import Redis
+    from rq import Queue
+    
+    redis_conn = Redis(
+        host=os.getenv("REDIS_HOST", "localhost"),
+        port=int(os.getenv("REDIS_PORT", 6379)),
+        password=os.getenv("REDIS_PASSWORD", None),
+        ssl=os.getenv("REDIS_SSL", "False").lower() == "true",
+    )
+    # The 'sanfa_q' queue for GPU workers
+    q = Queue('sanfa_q', connection=redis_conn)
+except ImportError:
+    q = None
+    print("WARNING: Redis/RQ not installed. Install with `pip install redis rq`")
+
+
+class JobStartRequest(BaseModel):
+    image_url: str
+    user_id: str = "anonymous"
+    user_tier: str = "free"
+
+
+@app.post("/api/job/start")
+async def start_protection_job(
+    request: JobStartRequest,
+    client_request: Request
 ):
     """
-    Upload an image, get back the protected version + shield report.
-    
-    Headers:
-      X-User-Id: User identifier (from Supabase auth)
-      X-User-Tier: "free" | "starter" | "pro" | "team"
+    Decoupled Upload Architecture:
+    The frontend has ALREADY uploaded the image directly to S3 / Supabase Storage using a Pre-Signed URL.
+    It passes the public `image_url` here. We just queue the heavy GPU job and return a Job ID.
     """
-    # Validate file type
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(400, "Only image files are accepted")
-    
-    # Check file size (max 20MB)
-    content = await file.read()
-    if len(content) > 20 * 1024 * 1024:
-        raise HTTPException(400, "File too large. Maximum 20MB.")
-    
-    # Rate limit (user + IP)
-    client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
-    if not check_rate_limit(x_user_id, x_user_tier, client_ip):
+    if not q:
+        raise HTTPException(500, detail="Redis queue not configured on server")
+        
+    client_ip = client_request.client.host if client_request.client else "unknown"
+    if not check_rate_limit(request.user_id, request.user_tier, client_ip):
         raise HTTPException(
             429, 
             detail={
                 "code": "RATE_LIMIT",
-                "message": f"Monthly limit reached for {x_user_tier} tier",
+                "message": f"Monthly limit reached for {request.user_tier} tier",
                 "upgrade_url": "https://sanfa.dev/pricing"
             }
         )
     
-    # Create temp directory for processing
-    work_dir = tempfile.mkdtemp(prefix="sanfa_")
+    # Enqueue the background GPU process
+    from worker import process_image_job
+    job = q.enqueue(
+        process_image_job,
+        args=(str(uuid.uuid4()), request.image_url, request.user_tier),
+        job_timeout=600  # 10 minute timeout
+    )
     
-    try:
-        # Save uploaded file
-        ext = Path(file.filename or "image.png").suffix or ".png"
-        input_path = os.path.join(work_dir, f"input{ext}")
-        output_path = os.path.join(work_dir, f"protected{ext}")
+    return {
+        "status": "queued",
+        "job_id": job.id,
+        "message": "Image sent to GPU queue"
+    }
+
+
+@app.get("/api/job/{job_id}")
+async def get_job_status(job_id: str):
+    """Poll this endpoint to get the status of the GPU processing."""
+    if not q:
+        raise HTTPException(500, detail="Redis queue not configured")
         
-        with open(input_path, "wb") as f:
-            f.write(content)
+    job = q.fetch_job(job_id)
+    if not job:
+        raise HTTPException(404, detail="Job not found")
         
-        # Run the engine
-        from engine import poison_image
-        poison_image(input_path, output_path)
-        
-        # Read the report
-        report_path = output_path + ".report.json"
-        report = {}
-        if os.path.exists(report_path):
-            with open(report_path) as f:
-                report = json.load(f)
-        
-        # Return the protected image
-        # The report is included as a custom header
-        return FileResponse(
-            output_path,
-            media_type=f"image/{ext.lstrip('.')}",
-            filename=f"sanfa_protected_{file.filename}",
-            headers={
-                "X-Shield-Report": json.dumps(report),
-                "X-SANFA-Version": "4.0.0",
-            }
-        )
-        
-    except Exception as e:
-        raise HTTPException(500, detail={"code": "ENGINE_ERROR", "message": str(e)})
-    
-    finally:
-        # Cleanup temp files after response is sent
-        # Note: FileResponse handles streaming, cleanup happens after
-        pass
+    if job.is_finished:
+        # The worker returns a dict dict on success: {"status": "success", "result_url": "...", "report": {...}}
+        return {
+            "job_id": job_id,
+            "status": "completed",
+            "result": job.result
+        }
+    elif job.is_failed:
+        return {
+            "job_id": job_id,
+            "status": "failed",
+            "error": "The GPU worker failed to process this image."
+        }
+    else:
+        return {
+            "job_id": job_id,
+            "status": "processing",
+            "position_in_queue": q.get_job_position(job_id)
+        }
 
 
 @app.post("/api/analyze")
