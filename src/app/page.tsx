@@ -1,467 +1,338 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
-import { Shield, FolderOpen, ShieldAlert, Terminal as TerminalIcon, ShieldCheck, Zap, Lock, Fingerprint, Eye, Globe, Activity, Cpu } from "lucide-react";
+import { Shield, Sparkles, Zap, Lock, Globe, Activity, Cpu, ArrowRight, ShieldCheck, Fingerprint, Eye, ZapOff } from 'lucide-react';
+import Link from 'next/link';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { useRef } from 'react';
 
-type LogEntry = {
-  time: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+const fadeInUp: any = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] }
+  }
 };
 
-type ShieldReport = {
-  status: string;
-  engine_mode: string;
-  clip_distance: number;
-  pixels_modified_pct: number;
-  image_size: string;
-  original_hash: string;
-  protected_hash: string;
-  timestamp: string;
+const staggerContainer: any = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.2
+    }
+  }
 };
 
 export default function Home() {
-  const [protectedCount, setProtectedCount] = useState(0);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [shieldReport, setShieldReport] = useState<ShieldReport | null>(null);
-  const [currentFileName, setCurrentFileName] = useState("");
-  const logsEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
 
-  useEffect(() => {
-    setLogs([{
-      time: new Date().toLocaleTimeString(),
-      message: "System initialized. CLIP adversarial engine standby.",
-      type: "info"
-    }]);
-
-    let unlisteners: Array<() => void> = [];
-
-    const initializeIpc = async () => {
-      try {
-        const { listen } = await import('@tauri-apps/api/event');
-
-        const unlistenLog = await listen<{ message: string, level: string }>('app-log', (event) => {
-          const msg = event.payload.message;
-
-          // Parse progress events
-          if (msg.startsWith("PROGRESS:")) {
-            const pct = parseInt(msg.split(":")[1]);
-            setProgress(pct);
-            return;
-          }
-
-          // Parse shield report
-          if (msg.startsWith("REPORT:")) {
-            try {
-              const report = JSON.parse(msg.substring(7));
-              setShieldReport(report);
-              setIsProcessing(false);
-              setProgress(100);
-            } catch (e) { /* ignore parse errors */ }
-            return;
-          }
-
-          setLogs(prev => [...prev, {
-            time: new Date().toLocaleTimeString(),
-            message: msg,
-            type: event.payload.level as 'info' | 'success' | 'error' | 'warning'
-          }]);
-        });
-
-        const unlistenShield = await listen('asset-shielded', () => {
-          setProtectedCount(p => p + 1);
-        });
-
-        unlisteners.push(unlistenLog, unlistenShield);
-      } catch (e) {
-        console.warn("Tauri IPC not available.", e);
-      }
-    };
-
-    initializeIpc();
-    return () => { unlisteners.forEach(fn => fn()); };
-  }, []);
-
-  useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [logs]);
-
-  const selectAndProcess = async () => {
-    try {
-      const { open } = await import('@tauri-apps/plugin-dialog');
-      const { invoke } = await import('@tauri-apps/api/core');
-
-      const selected = await open({
-        multiple: false,
-        filters: [{ name: 'Image Files', extensions: ['png', 'jpg', 'jpeg'] }]
-      });
-
-      if (selected) {
-        const fileName = typeof selected === 'string' ? selected.split('\\').pop() || selected.split('/').pop() || 'image' : 'image';
-        setCurrentFileName(fileName);
-        setIsProcessing(true);
-        setProgress(0);
-        setShieldReport(null);
-        setLogs(prev => [...prev, { time: new Date().toLocaleTimeString(), message: `Selected: ${fileName}`, type: 'info' }]);
-        await invoke('ingest_file', { sourcePath: selected });
-      }
-    } catch (e) {
-      console.log("Error:", e);
-      setIsProcessing(false);
-    }
-  };
-
-  const openShielded = async () => {
-    try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      await invoke('open_folder', { folderType: 'shielded' });
-    } catch (e) {
-      console.log("Error:", e);
-    }
-  };
-
-  const clipDistancePct = shieldReport ? Math.min(Math.round(shieldReport.clip_distance * 100), 100) : 0;
+  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
 
   return (
-    <main style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-      backgroundColor: '#09090b', color: '#fafafa', minHeight: '100vh',
-      padding: '1.5rem 2rem', fontFamily: "'Inter', 'SF Pro Display', monospace",
-      userSelect: 'none', position: 'relative', overflow: 'hidden'
-    }}>
-
-      {/* Ambient glow */}
-      <div style={{
-        position: 'fixed', top: '-200px', right: '-200px', width: '600px', height: '600px',
-        background: 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)',
-        pointerEvents: 'none', zIndex: 0
-      }} />
-      <div style={{
-        position: 'fixed', bottom: '-200px', left: '-200px', width: '600px', height: '600px',
-        background: 'radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)',
-        pointerEvents: 'none', zIndex: 0
-      }} />
-
-      {/* Header */}
-      <div style={{
-        width: '100%', maxWidth: '900px', display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid rgba(39,39,42,0.6)',
-        paddingBottom: '1rem', position: 'relative', zIndex: 1
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            width: '40px', height: '40px', borderRadius: '10px',
-            background: 'linear-gradient(135deg, #059669, #10b981)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 0 20px rgba(16,185,129,0.3)'
-          }}>
-            <Shield style={{ width: '22px', height: '22px', color: '#fff' }} />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '0.08em', color: '#fafafa', margin: 0 }}>
-              POISON<span style={{ color: '#52525b' }}>PILL</span>
-            </h1>
-            <span style={{ fontSize: '0.65rem', color: '#52525b', letterSpacing: '0.15em', textTransform: 'uppercase' }}>
-              Anti-AI Shield Engine
-            </span>
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-          <Link href="/login" style={{ 
-            color: 'rgba(250,250,250,0.4)', fontSize: '0.75rem', textDecoration: 'none', 
-            transition: 'all 0.2s', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 
-          }} onMouseEnter={(e) => e.currentTarget.style.color = '#10b981' } onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(250,250,250,0.4)' }>
-            Protocol Access
-          </Link>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{
-              width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10b981',
-              boxShadow: '0 0 8px rgba(16,185,129,0.6)',
-              animation: 'pulse 2s infinite'
-            }} />
-            <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              System Active
-            </span>
-          </div>
-          <span style={{ fontSize: '0.65rem', color: '#3f3f46' }}>v2.0.0 — CLIP Engine</span>
-        </div>
-      </div>
-    </div>
-
-      {/* Stats + Actions Row */}
-      <div style={{
-        width: '100%', maxWidth: '900px', display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '1.5rem',
-        position: 'relative', zIndex: 1
-      }}>
-
-        {/* Protected Assets Counter */}
-        <div style={{
-          backgroundColor: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.15)',
-          borderRadius: '12px', padding: '1.25rem', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', position: 'relative'
-        }}>
-          <span style={{ color: '#6b7280', fontSize: '0.7rem', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-            Protected Assets
-          </span>
-          <span style={{
-            fontSize: '2.75rem', fontWeight: 200, color: '#34d399', fontFamily: 'monospace',
-            textShadow: '0 0 20px rgba(16,185,129,0.3)', lineHeight: 1
-          }}>
-            {protectedCount}
-          </span>
-        </div>
-
-        {/* Select & Protect Button */}
-        <div
-          onClick={isProcessing ? undefined : selectAndProcess}
-          style={{
-            backgroundColor: isProcessing ? 'rgba(16,185,129,0.1)' : '#fafafa',
-            borderRadius: '12px', padding: '1.25rem', display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', cursor: isProcessing ? 'wait' : 'pointer',
-            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-            border: isProcessing ? '1px solid rgba(16,185,129,0.3)' : '1px solid transparent',
-            position: 'relative', overflow: 'hidden'
-          }}
-          onMouseEnter={(e) => { if (!isProcessing) { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px -8px rgba(16,185,129,0.25)'; } }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
-        >
-          {isProcessing ? (
-            <>
-              <Zap style={{ width: '22px', height: '22px', color: '#10b981', marginBottom: '0.5rem', animation: 'spin 1s linear infinite' }} />
-              <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#10b981', marginBottom: '4px' }}>Processing...</span>
-              {/* Progress Bar */}
-              <div style={{ width: '100%', height: '4px', backgroundColor: 'rgba(16,185,129,0.1)', borderRadius: '2px', overflow: 'hidden', marginTop: '6px' }}>
-                <div style={{
-                  height: '100%', backgroundColor: '#10b981', borderRadius: '2px',
-                  width: `${progress}%`, transition: 'width 0.3s ease',
-                  boxShadow: '0 0 8px rgba(16,185,129,0.5)'
-                }} />
-              </div>
-              <span style={{ fontSize: '0.65rem', color: '#6b7280', marginTop: '4px' }}>{progress}% — FGSM iteration</span>
-            </>
-          ) : (
-            <>
-              <FolderOpen style={{ width: '22px', height: '22px', color: '#18181b', marginBottom: '0.5rem' }} />
-              <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#18181b', marginBottom: '4px' }}>Select & Protect</span>
-              <span style={{ fontSize: '0.7rem', color: '#71717a' }}>Choose an image to shield</span>
-            </>
-          )}
-        </div>
-
-        {/* View Protected */}
-        <div
-          onClick={openShielded}
-          style={{
-            backgroundColor: '#fafafa', borderRadius: '12px', padding: '1.25rem',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-            border: '1px solid transparent'
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 30px -8px rgba(16,185,129,0.25)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
-        >
-          <ShieldAlert style={{ width: '22px', height: '22px', color: '#18181b', marginBottom: '0.5rem' }} />
-          <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#18181b', marginBottom: '4px' }}>Shielded Art</span>
-          <span style={{ fontSize: '0.7rem', color: '#71717a' }}>View protected output</span>
-        </div>
+    <div ref={containerRef} className="min-h-screen bg-[#0a0a0b] selection:bg-gold-500/30 selection:text-white overflow-x-hidden font-sans">
+      {/* Dynamic Background Elements */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03] noise z-[100]" />
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-[1400px] pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-gold-500/10 blur-[120px] rounded-full animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/5 blur-[120px] rounded-full" />
       </div>
 
-      {/* Shield Report Panel — only shows after processing */}
-      {shieldReport && (
-        <div style={{
-          width: '100%', maxWidth: '900px', marginBottom: '1.5rem',
-          background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(6,78,59,0.05) 100%)',
-          border: '1px solid rgba(16,185,129,0.2)', borderRadius: '12px', padding: '1.25rem',
-          position: 'relative', zIndex: 1, overflow: 'hidden'
-        }}>
-          {/* Success glow */}
-          <div style={{
-            position: 'absolute', top: '-30px', right: '-30px', width: '120px', height: '120px',
-            background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)',
-            pointerEvents: 'none'
-          }} />
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
-            <ShieldCheck style={{ width: '20px', height: '20px', color: '#10b981' }} />
-            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#10b981', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              Shield Report — {currentFileName}
-            </span>
-            <span style={{
-              marginLeft: 'auto', fontSize: '0.65rem', color: '#065f46',
-              backgroundColor: 'rgba(16,185,129,0.15)', padding: '2px 8px',
-              borderRadius: '99px', fontWeight: 600
-            }}>
-              {shieldReport.engine_mode === 'CLIP_ADVERSARIAL' ? '🧠 CLIP Adversarial' : '⚡ Enhanced Fallback'}
-            </span>
+      {/* Navigation */}
+      <motion.nav 
+        initial={{ y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+        className="px-8 py-6 flex items-center justify-between fixed top-0 w-full z-[110] glass-card border-b border-white/5 rounded-none"
+      >
+        <div className="flex items-center gap-4 group">
+          <div className="w-10 h-10 bg-gold-500/20 rounded-xl flex items-center justify-center border border-gold-500/30 group-hover:scale-110 transition-all duration-500 shadow-xl shadow-gold-500/10 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gold-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+            <Shield className="text-gold-500 w-6 h-6 relative z-10" />
           </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
-            {/* CLIP Distance */}
-            <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Eye style={{ width: '16px', height: '16px', color: '#6b7280', marginBottom: '6px' }} />
-              <span style={{ fontSize: '0.6rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>AI Confusion</span>
-              <span style={{ fontSize: '1.5rem', fontWeight: 300, color: '#34d399', fontFamily: 'monospace' }}>
-                {clipDistancePct}%
-              </span>
-              {/* Mini bar */}
-              <div style={{ width: '100%', height: '3px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '2px', marginTop: '6px', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${clipDistancePct}%`, backgroundColor: '#10b981', borderRadius: '2px' }} />
-              </div>
-            </div>
-
-            {/* Pixel Coverage */}
-            <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Zap style={{ width: '16px', height: '16px', color: '#6b7280', marginBottom: '6px' }} />
-              <span style={{ fontSize: '0.6rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Pixel Coverage</span>
-              <span style={{ fontSize: '1.5rem', fontWeight: 300, color: '#34d399', fontFamily: 'monospace' }}>
-                {shieldReport.pixels_modified_pct}%
-              </span>
-            </div>
-
-            {/* Hash Fingerprint */}
-            <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Fingerprint style={{ width: '16px', height: '16px', color: '#6b7280', marginBottom: '6px' }} />
-              <span style={{ fontSize: '0.6rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Hash Changed</span>
-              <span style={{ fontSize: '0.7rem', color: '#a1a1aa', fontFamily: 'monospace', wordBreak: 'break-all', textAlign: 'center' }}>
-                {shieldReport.original_hash.slice(0, 12)}→{shieldReport.protected_hash.slice(0, 12)}
-              </span>
-            </div>
-
-            {/* C2PA Status */}
-            <div style={{ backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '10px', padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <Lock style={{ width: '16px', height: '16px', color: '#6b7280', marginBottom: '6px' }} />
-              <span style={{ fontSize: '0.6rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>C2PA Watermark</span>
-              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#10b981' }}>✓ Embedded</span>
-            </div>
+          <div className="flex flex-col">
+            <span className="text-xl font-serif tracking-tight text-white leading-none">SANFA <span className="text-gold-500">CLOUD</span></span>
+            <span className="text-[9px] uppercase tracking-[0.4em] text-white/30 font-bold mt-1">Sovereignty Protocol</span>
           </div>
         </div>
-      )}
-
-      {/* Terminal Log View */}
-      <div style={{
-        width: '100%', maxWidth: '900px', flex: 1, backgroundColor: '#000000',
-        border: '1px solid rgba(39,39,42,0.6)', borderRadius: '12px',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden',
-        position: 'relative', zIndex: 1
-      }}>
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px',
-          backgroundColor: 'rgba(24,24,27,0.8)', borderBottom: '1px solid rgba(39,39,42,0.6)',
-          backdropFilter: 'blur(8px)'
-        }}>
-          <TerminalIcon style={{ width: '14px', height: '14px', color: '#52525b' }} />
-          <span style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 600 }}>
-            Activity Stream
-          </span>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '5px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#27272a' }} />
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#27272a' }} />
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#27272a' }} />
-          </div>
-        </div>
-
-        <div style={{ flex: 1, padding: '12px 16px', overflowY: 'auto', minHeight: '200px', maxHeight: '300px' }}>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {logs.map((log, i) => (
-              <li key={i} style={{
-                fontSize: '0.8rem', display: 'flex', gap: '10px', fontFamily: 'monospace',
-                color: log.type === 'error' ? '#f87171' : log.type === 'success' ? '#34d399' : '#d4d4d8'
-              }}>
-                <span style={{ color: '#3f3f46', flexShrink: 0 }}>[{log.time}]</span>
-                <span>{log.message}</span>
-              </li>
+        <div className="flex items-center gap-10">
+          <div className="hidden md:flex items-center gap-8">
+            {['Architecture', 'Manifesto', 'Security'].map((item) => (
+              <Link key={item} href={`#${item.toLowerCase()}`} className="text-[10px] font-bold text-white/30 hover:text-white transition-all uppercase tracking-[0.2em]">{item}</Link>
             ))}
-            <div ref={logsEndRef} />
-          </ul>
-        </div>
-      </div>
-
-      {/* MISSION MANIFESTO (Brick 5) */}
-      <div style={{
-        width: '100%', maxWidth: '900px', marginTop: '4rem', padding: '4rem 0',
-        borderTop: '1px solid rgba(255,255,255,0.05)', position: 'relative', zIndex: 1
-      }}>
-        <h2 style={{ fontSize: '2.5rem', fontFamily: 'serif', color: '#fff', marginBottom: '1.5rem', textAlign: 'center' }}>
-          The <span style={{ color: '#10b981' }}>Digital Sovereignty</span> Manifesto
-        </h2>
-        <div style={{ 
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem', marginTop: '3rem'
-        }}>
-          <div>
-            <h3 style={{ color: '#10b981', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '1rem' }}>The Heart of the Engine</h3>
-            <p style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, fontSize: '1.05rem' }}>
-              We don't just add noise. SANFA Engine V5 performs a deep-tissue frequency scramble on your masterpieces. 
-              By injecting Gradient Poison into the high-frequency domains that neural networks rely on for feature extraction, 
-              we ensure that any model trained on your work suffers from <strong>Neural Collapse</strong>.
-            </p>
           </div>
-          <div>
-            <h3 style={{ color: '#10b981', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '1rem' }}>Our Absolute Mission</h3>
-            <p style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 1.8, fontSize: '1.05rem' }}>
-              In an era of mass scraping, your creativity is your data. Our mission is to provide every artist with a 
-              "God-Level" deterrent. We believe in an internet where human genius is protected by mathematical certainty. 
-              Your masteries are yours. Forever.
-            </p>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="text-[10px] font-bold text-white/50 hover:text-white transition-all tracking-[0.2em] uppercase hidden sm:block">Access Terminal</Link>
+            <Link href="/login" className="bg-white text-black px-8 py-3 rounded-full text-xs font-black uppercase tracking-widest hover:bg-gold-500 transition-all shadow-2xl hover:shadow-gold-500/40">Engage</Link>
           </div>
         </div>
-      </div>
+      </motion.nav>
 
-      {/* CLOUD ARCHITECTURE (Brick 5) */}
-      <div style={{
-        width: '100%', maxWidth: '900px', marginBottom: '4rem',
-        backgroundColor: 'rgba(24,24,27,0.4)', border: '1px solid rgba(255,255,255,0.05)',
-        borderRadius: '24px', padding: '3rem', position: 'relative', zIndex: 1
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3em' }}>
-            System Architecture
-          </span>
-          <h2 style={{ fontSize: '2rem', color: '#fff', marginTop: '0.5rem' }}>Decoupled Cloud Pipeline</h2>
-          <p style={{ color: 'rgba(255,255,255,0.4)', marginTop: '1rem' }}>Capable of processing 200,000+ protections per month via our serverless GPU enclave.</p>
-        </div>
+      <main className="relative z-10">
+        {/* HERO SECTION: The Sovereignty Entry */}
+        <section className="relative min-h-screen flex flex-col items-center justify-center pt-32 pb-20 px-8">
+          <motion.div 
+            style={{ opacity, scale }}
+            variants={staggerContainer as any}
+            initial="hidden"
+            animate="visible"
+            className="max-w-7xl mx-auto text-center"
+          >
+            <motion.div variants={fadeInUp as any} className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-gold-500/10 border border-gold-500/20 mb-10 shadow-lg shadow-gold-500/5">
+              <Sparkles className="w-4 h-4 text-gold-500 animate-pulse" />
+              <span className="text-[10px] font-black text-gold-400 uppercase tracking-[0.4em]">Engine V5.2 Fully Operational</span>
+            </motion.div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '2rem' }}>
-          {[
-            { label: 'Edge Ingestion', detail: 'Direct-to-S3 pre-signed uploads bypass server bottlenecks.', icon: 'Globe' },
-            { label: 'Job Scheduling', detail: 'Redis-backed queue ensures zero-drop reliability under heavy load.', icon: 'Activity' },
-            { label: 'GPU Core', detail: 'On-demand Modal.com workers utilizing A100/H100 clusters.', icon: 'Zap' }
-          ].map((item, i) => (
-            <div key={i} style={{ 
-              backgroundColor: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)',
-              padding: '2rem', borderRadius: '16px', textAlign: 'center'
-            }}>
-              <div style={{ color: '#10b981', marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
-                <Zap style={{ width: '24px', height: '24px' }} />
+            <motion.h1 
+              variants={fadeInUp as any}
+              className="text-[var(--font-size-4xl)] font-serif mb-10 tracking-tighter leading-[0.85] text-gradient py-2"
+            >
+              Defend the <br /> <span className="text-gold-500 italic">Human Genius.</span>
+            </motion.h1>
+
+            <motion.p 
+              variants={fadeInUp as any}
+              className="text-white/40 max-w-3xl mx-auto text-lg md:text-2xl font-sans leading-relaxed mb-16 tracking-tight"
+            >
+              SANFA is the world's most advanced deterrent against AI scraping. We mathematically poison your artwork to render it <span className="text-white font-bold italic">invisible to neural extractors</span> while preserving every pixel of human intent.
+            </motion.p>
+
+            <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center gap-8">
+              <Link href="/login" className="group bg-white text-black px-14 py-6 rounded-full text-lg font-black uppercase tracking-widest hover:bg-gold-500 transition-all flex items-center gap-4 shadow-[0_0_50px_rgba(255,255,255,0.1)] hover:shadow-gold-500/50">
+                Engage Protection
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+              </Link>
+              <Link href="#manifesto" className="text-[11px] font-black uppercase tracking-[0.4em] text-white/30 hover:text-white transition-all flex items-center gap-3 border-b border-white/10 pb-1 hover:border-gold-500">
+                The Manifesto
+              </Link>
+            </motion.div>
+          </motion.div>
+
+          {/* Abstract Engine Visual */}
+          <motion.div 
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8, duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full max-w-5xl mt-32 aspect-video glass-card rounded-[48px] overflow-hidden relative group"
+          >
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0b] via-transparent to-transparent z-10" />
+            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=2000')] bg-cover bg-center grayscale opacity-20 group-hover:scale-110 transition-transform duration-[10s]" />
+            <div className="absolute inset-0 flex items-center justify-center z-20">
+              <div className="flex flex-col items-center gap-6">
+                <div className="w-24 h-24 bg-gold-500/10 rounded-full flex items-center justify-center border border-gold-500/30 scale-150 animate-pulse">
+                  <ShieldCheck className="text-gold-500 w-12 h-12" />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-gold-500">Neural Tunnel Enabled</span>
               </div>
-              <h4 style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '0.75rem' }}>{item.label}</h4>
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', lineHeight: 1.6 }}>{item.detail}</p>
             </div>
-          ))}
-        </div>
-      </div>
+            {/* Grid Overlay */}
+            <div className="absolute inset-0 z-10 opacity-20" style={{ backgroundImage: 'radial-gradient(rgba(201,168,76,0.2) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+          </motion.div>
+        </section>
 
-      {/* CSS Animations */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        * { box-sizing: border-box; }
-        body { margin: 0; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
-      `}</style>
-    </main>
+        {/* ARCHITECTURE: The Decoupled Cloud Pipeline */}
+        <section id="architecture" className="py-40 relative border-y border-white/5 bg-white/[0.01]">
+          <div className="max-w-7xl mx-auto px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-32 items-center">
+              <motion.div 
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-100px" }}
+                variants={staggerContainer as any}
+              >
+                <motion.span variants={fadeInUp as any} className="text-gold-500 font-black text-[10px] uppercase tracking-[0.5em] block mb-6">Scale & Sovereignty</motion.span>
+                <motion.h2 variants={fadeInUp as any} className="text-[var(--font-size-3xl)] font-serif mb-10 leading-[0.9] tracking-tighter">Decoupled <br /> <span className="text-white/30">GPU Core.</span></motion.h2>
+                <motion.p variants={fadeInUp as any} className="text-white/40 text-xl mb-14 font-sans leading-relaxed tracking-tight">
+                  Our infrastructure is designed for high-frequency protection. By decoupling data ingestion from the adversarial cluster, we achieve 100% uptime and sub-second job handoffs. When you upload, our serverless enclaves immediately wage war on feature extraction.
+                </motion.p>
+                
+                <div className="space-y-10">
+                  {[
+                    { icon: Globe, title: 'Global Edge Ingestion', desc: 'Direct-to-bucket pre-signed uploads bypass every server bottleneck.' },
+                    { icon: Cpu, title: 'Serverless H100 Cluster', desc: 'On-demand GPU workers that spin up in milliseconds for infinite scale.' },
+                    { icon: Activity, title: 'Live Neural Telemetry', desc: 'Watch the adversarial distance grow in real-time as the poison takes root.' }
+                  ].map((item, i) => (
+                    <motion.div 
+                      key={i}
+                      variants={fadeInUp as any}
+                      whileHover={{ x: 15 }}
+                      className="flex items-start gap-8 group"
+                    >
+                      <div className="w-14 h-14 rounded-2xl bg-gold-500/10 flex items-center justify-center border border-gold-500/20 group-hover:border-gold-500/50 transition-all shadow-xl shadow-gold-500/5">
+                        <item.icon className="text-gold-500 w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="font-serif text-2xl mb-2 text-white/90 group-hover:text-gold-500 transition-colors">{item.title}</h4>
+                        <p className="text-white/30 text-base font-sans leading-relaxed">{item.desc}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+
+              {/* BENTO GRID VISUALIZATION */}
+              <div className="grid grid-cols-2 gap-6 relative">
+                {/* Glow behind grid */}
+                <div className="absolute inset-0 bg-gold-500/5 blur-[100px] rounded-full" />
+                
+                <div className="space-y-6">
+                  <motion.div 
+                    whileHover={{ y: -10 }}
+                    className="h-56 glass-card rounded-[40px] p-10 flex flex-col justify-end border-gold-500/10"
+                  >
+                    <span className="text-gold-500 font-serif text-5xl mb-3">99.9<span className="text-2xl text-gold-500/40">%</span></span>
+                    <span className="text-white/30 text-[10px] font-black uppercase tracking-[0.3em]">Processing Reliability</span>
+                  </motion.div>
+                  <motion.div 
+                    whileHover={{ y: -10 }}
+                    className="h-80 glass-card rounded-[40px] p-10 bg-gold-500/5 border-gold-500/30 flex flex-col items-center justify-center text-center"
+                  >
+                    <Zap className="text-gold-500 w-16 h-16 mb-8 animate-bounce" />
+                    <span className="text-white font-serif text-3xl mb-3">200K+</span>
+                    <span className="text-white/30 text-[10px] font-black uppercase tracking-[0.3em]">Monthly Scrambles</span>
+                  </motion.div>
+                </div>
+                <div className="space-y-6 pt-12">
+                  <motion.div 
+                    whileHover={{ y: -10 }}
+                    className="h-80 glass-card rounded-[40px] p-10 overflow-hidden relative group border-white/5"
+                  >
+                    <div className="absolute inset-0 bg-gold-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-700" />
+                    <div className="relative z-20 h-full flex flex-col">
+                      <Fingerprint className="text-white w-12 h-12 mb-8" />
+                      <span className="text-white font-serif text-3xl mb-3">Immutable Hash</span>
+                      <span className="text-white/30 text-[10px] font-black uppercase tracking-[0.3em]">C2PA Authenticated</span>
+                    </div>
+                  </motion.div>
+                  <motion.div 
+                    whileHover={{ y: -10 }}
+                    className="h-56 glass-card rounded-[40px] p-10 flex flex-col justify-center border-gold-500/10"
+                  >
+                    <div className="flex items-center gap-3 mb-4">
+                       <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+                       <span className="text-emerald-500 text-[10px] font-black uppercase tracking-widest">Active nodes</span>
+                    </div>
+                    <span className="text-white font-serif text-2xl">6.4ms Latency</span>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SECURITY: The Shield Logic */}
+        <section id="security" className="py-40 bg-[#070708]">
+          <div className="max-w-7xl mx-auto px-8 text-center mb-24">
+            <span className="text-gold-500 font-black text-[10px] uppercase tracking-[0.5em] block mb-6">The Protocol</span>
+            <h2 className="text-[var(--font-size-3xl)] font-serif text-gradient leading-none">Silent Warfare.</h2>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { icon: Eye, title: 'Neural Collapse', desc: 'We identify the high-probability feature kernels AI models use for recognition and systematically invert their signals.' },
+              { icon: Lock, title: 'Frequency Scramble', desc: 'Our Engine V5 adds invisible mathematical noise to the spectral domain, creating a "black hole" in the model\'s memory.' },
+              { icon: ZapOff, title: 'Zero Training Decay', desc: 'Any model trained on protected assets suffers from catastrophic forgetting, protecting not just one image, but your entire style.' }
+            ].map((item, i) => (
+              <motion.div 
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.2 }}
+                variants={fadeInUp as any}
+                className="glass-card rounded-[40px] p-12 border-white/5 hover:border-gold-500/30 transition-all flex flex-col items-center text-center group"
+              >
+                <div className="w-20 h-20 bg-white/5 rounded-[32px] flex items-center justify-center mb-10 border border-white/10 group-hover:bg-gold-500/10 group-hover:border-gold-500/30 transition-all">
+                  <item.icon className="text-white/40 w-10 h-10 group-hover:text-gold-500 transition-colors" />
+                </div>
+                <h4 className="text-3xl font-serif mb-6 text-white leading-tight">{item.title}</h4>
+                <p className="text-white/30 text-lg leading-relaxed font-sans">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* MANIFESTO: Digital Sovereignty */}
+        <section id="manifesto" className="py-40">
+          <div className="max-w-5xl mx-auto px-8">
+            <div className="glass-card rounded-[64px] p-20 border-gold-500/10 relative overflow-hidden">
+               {/* Background Logo */}
+               <Shield className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gold-500/5 w-[600px] h-[600px] rotate-12 pointer-events-none" />
+               
+               <div className="relative z-10">
+                 <h2 className="text-[var(--font-size-2xl)] font-serif mb-20 text-center tracking-tighter">The Digital Sovereignty <br /> <span className="text-gold-500 uppercase font-sans font-black text-sm tracking-[0.5em] block mt-4">Manifesto</span></h2>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
+                    <div className="space-y-12">
+                       <div className="space-y-4">
+                          <span className="text-gold-500 font-serif text-4xl italic">01.</span>
+                          <h3 className="text-white text-2xl font-serif">Consent is Non-Negotiable.</h3>
+                          <p className="text-white/40 leading-relaxed text-lg font-sans">AI treats the web as a buffet. We believe every pixel is a property. Learning should require permission, or at the very least, a decisive technical cost.</p>
+                       </div>
+                       <div className="space-y-4">
+                          <span className="text-gold-500 font-serif text-4xl italic">02.</span>
+                          <h3 className="text-white text-2xl font-serif">The Right to Confusion.</h3>
+                          <p className="text-white/40 leading-relaxed text-lg font-sans">Confusion is the ultimate privacy. By injecting "Gradient Poison" into image artifacts, SANFA creators strike back at mass-scraping robots.</p>
+                       </div>
+                    </div>
+                    <div className="flex flex-col justify-center items-center p-12 bg-gold-500/5 rounded-[48px] border border-gold-500/10">
+                       <p className="text-gold-500 font-serif text-3xl italic text-center leading-tight mb-10">
+                          "Your genius is not training data. <br /> It is your heritage."
+                       </p>
+                       <Link href="/login" className="bg-white text-black px-12 py-5 rounded-full text-sm font-black uppercase tracking-[0.3em] hover:bg-gold-500 transition-all">Engage the Shield</Link>
+                    </div>
+                 </div>
+               </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* FOOTER */}
+      <footer className="py-24 border-t border-white/5 relative bg-[#070708]">
+        <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row items-center justify-between gap-12">
+          <div className="flex flex-col items-center md:items-start gap-4">
+            <div className="flex items-center gap-4">
+              <Shield className="text-gold-500/50 w-6 h-6" />
+              <span className="text-white font-serif text-xl tracking-tight">SANFA PROTOCOL</span>
+            </div>
+            <p className="text-white/20 text-xs font-sans max-w-xs text-center md:text-left leading-relaxed">
+              Establishing a decentralized defense for the future of human creativity. 
+              Built for the sovereign artist.
+            </p>
+          </div>
+          
+          <div className="flex flex-col items-center gap-6">
+            <span className="text-gold-500 font-black text-[10px] uppercase tracking-[0.5em]">Global Statistics</span>
+            <div className="flex items-center gap-12">
+               <div className="text-center">
+                  <span className="text-white font-serif text-2xl block">14.5M</span>
+                  <span className="text-white/20 text-[9px] font-black uppercase tracking-widest">Assets Shielded</span>
+               </div>
+               <div className="text-center">
+                  <span className="text-white font-serif text-2xl block">182K</span>
+                  <span className="text-white/20 text-[9px] font-black uppercase tracking-widest">Artists Active</span>
+               </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-10">
+            {['Twitter', 'Discord', 'Docs'].map((item) => (
+              <Link key={item} href="#" className="text-white/30 hover:text-white transition-colors text-[10px] font-bold uppercase tracking-[0.3em]">{item}</Link>
+            ))}
+          </div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-8 pt-12 mt-12 border-t border-white/[0.03] text-center">
+           <span className="text-white/[0.05] text-[10px] font-black uppercase tracking-[0.5em]">© 2026 SANFA CLOUD • BY THE ARCHITECT</span>
+        </div>
+      </footer>
+    </div>
   );
 }

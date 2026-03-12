@@ -2,7 +2,25 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@/lib/supabase-browser';
-import { Shield, Upload, LogOut, Grid, Image as ImageIcon, Zap, CheckCircle, Clock } from 'lucide-react';
+import { Shield, Upload, LogOut, Grid, Image as ImageIcon, Zap, CheckCircle, Clock, CreditCard, Box, LayoutGrid, Info, Activity } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+export const dynamic = 'force-dynamic';
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0 }
+};
 
 export default function Dashboard() {
   const supabase = useMemo(() => createClient(), []);
@@ -21,7 +39,6 @@ export default function Dashboard() {
       }
       setUser(user);
 
-      // Fetch Profile & Assets in parallel
       const [profileRes, assetsRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('protected_images').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
@@ -34,7 +51,6 @@ export default function Dashboard() {
 
     fetchData();
 
-    // REAL-TIME SUBSCRIPTION: Listen for job status changes
     const channel = supabase
       .channel('schema-db-changes')
       .on('postgres_changes', 
@@ -59,16 +75,13 @@ export default function Dashboard() {
   const handleProtect = async () => {
     setIsUploading(true);
     try {
-      // 1. SIMULATE UPLOAD (In prod: Upload to Supabase Storage first)
       const mockUrl = `https://picsum.photos/seed/${Math.random()}/800/600`;
-      
-      // 2. TRIGGER API
       const res = await fetch('/api/protect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           imageUrl: mockUrl,
-          fileName: `Artwork_${Date.now()}.png`
+          fileName: `Masterpiece_${Date.now()}.png`
         })
       });
 
@@ -77,7 +90,7 @@ export default function Dashboard() {
 
     } catch (err) {
       console.error('Handoff Failed:', err);
-      alert('System handoff failed. Check logs.');
+      alert('System handoff failed. Check connectivity.');
     } finally {
       setIsUploading(false);
     }
@@ -89,124 +102,254 @@ export default function Dashboard() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#0F0F0F] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <Zap className="w-8 h-8 text-[#C9A84C] animate-pulse" />
-        <span className="text-white/30 text-sm font-sans tracking-widest uppercase">Initializing Enclave...</span>
-      </div>
+    <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex flex-col items-center gap-6"
+      >
+        <div className="w-16 h-16 bg-gold-500/10 rounded-2xl flex items-center justify-center border border-gold-500/20 shadow-2xl shadow-gold-500/10">
+          <Shield className="w-8 h-8 text-gold-500 animate-pulse" />
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          <span className="text-white font-serif text-xl tracking-tight">Accessing Enclave</span>
+          <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ x: '-100%' }}
+              animate={{ x: '100%' }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+              className="w-1/2 h-full bg-gold-500 shadow-[0_0_10px_rgba(201,168,76,0.5)]"
+            />
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#0F0F0F] text-white">
-      {/* Sidebar / Nav */}
-      <nav className="border-b border-white/5 bg-[#141414] px-8 py-4 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#C9A84C]/20 rounded-xl flex items-center justify-center border border-[#C9A84C]/30">
-            <Shield className="text-[#C9A84C] w-6 h-6" />
+    <div className="min-h-screen bg-[#0a0a0b] text-zinc-100 font-sans selection:bg-gold-500/30">
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03] noise z-50" />
+
+      {/* Navigation */}
+      <nav className="glass sticky top-0 z-[60] px-8 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 bg-gold-500/20 rounded-xl flex items-center justify-center border border-gold-500/30">
+            <Shield className="text-gold-500 w-6 h-6" />
           </div>
-          <span className="text-xl font-serif tracking-tight">SANFA <span className="text-[#C9A84C]">CLOUD</span></span>
+          <div className="flex flex-col">
+            <span className="text-lg font-serif leading-none tracking-tight">SANFA <span className="text-gold-500">CLOUD</span></span>
+            <span className="text-[10px] uppercase tracking-[0.3em] text-white/30 font-bold mt-1">Enclave Authority</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="hidden md:flex items-center gap-4 px-4 py-2 bg-black/40 rounded-full border border-white/5">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-xs font-sans text-white/50 uppercase tracking-widest">{user?.email}</span>
+        <div className="flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-6 px-5 py-2 bg-white/5 rounded-full border border-white/5">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <span className="text-[11px] font-bold text-white/40 uppercase tracking-widest">{user?.email}</span>
+            </div>
+            <div className="w-px h-3 bg-white/10" />
+            <div className="flex items-center gap-2 text-gold-500">
+              <CreditCard className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-bold uppercase tracking-widest">{profile?.credits_remaining || 0} PRC</span>
+            </div>
           </div>
           <button 
             onClick={handleLogout}
-            className="text-white/30 hover:text-white transition-all flex items-center gap-2 group"
+            className="group flex items-center gap-2 text-white/30 hover:text-white transition-all"
           >
+            <span className="text-[11px] font-bold uppercase tracking-widest hidden sm:block">Exit Terminal</span>
             <LogOut className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-8 py-12">
-        {/* Header Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          {[
-            { label: 'Credits Remaining', val: profile?.credits_remaining || '0', color: '#C9A84C' },
-            { label: 'Protected Assets', val: assets.length, color: '#10b981' },
-            { label: 'Security Tier', val: profile?.subscription_status?.toUpperCase() || 'FREE', color: '#fff' }
-          ].map((stat, i) => (
-            <div key={i} className="bg-[#1A1A1A] border border-white/5 p-8 rounded-2xl relative overflow-hidden group hover:border-[#C9A84C]/30 transition-all">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#C9A84C]/5 rounded-bl-[100px] -mr-8 -mt-8 group-hover:bg-[#C9A84C]/10 transition-all" />
-              <p className="text-white/40 text-xs font-sans uppercase tracking-[0.2em] mb-4">{stat.label}</p>
-              <h3 className="text-4xl font-serif" style={{ color: stat.color }}>{stat.val}</h3>
+        {/* Bento Stats Grid */}
+        <motion.div 
+          variants={container}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12"
+        >
+          <motion.div variants={item} className="md:col-span-2 glass-card rounded-3xl p-8 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Box className="w-24 h-24 text-gold-500" />
             </div>
-          ))}
-        </div>
+            <div className="relative z-10">
+              <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.3em] mb-4">Total Protected Assets</p>
+              <h3 className="text-[var(--font-size-2xl)] font-serif text-gradient">{assets.length}</h3>
+              <div className="mt-6 flex items-center gap-2 text-[10px] font-bold text-emerald-500 uppercase tracking-widest">
+                <Activity className="w-3 h-3" />
+                +12% vs last session
+              </div>
+            </div>
+          </motion.div>
 
-        {/* Action Center */}
-        <div className="bg-[#1A1A1A] border border-white/5 rounded-3xl p-12 text-center relative overflow-hidden group">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#C9A84C]/5 via-transparent to-transparent opacity-50" />
-          <div className="relative z-10">
-            <div className={`w-20 h-20 bg-[#C9A84C]/10 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-[#C9A84C]/20 transition-transform duration-500 ${isUploading ? 'animate-spin' : 'group-hover:scale-110'}`}>
-              <Upload className="text-[#C9A84C] w-8 h-8" />
+          <motion.div variants={item} className="glass-card rounded-3xl p-8 group">
+            <div className="flex items-center justify-between mb-8">
+              <div className="w-10 h-10 bg-gold-500/10 rounded-xl flex items-center justify-center border border-gold-500/20">
+                <LayoutGrid className="text-gold-500 w-5 h-5" />
+              </div>
+              <Info className="text-white/10 w-4 h-4" />
             </div>
-            <h2 className="text-3xl font-serif mb-4">Protect New Masterpiece</h2>
-            <p className="text-white/40 max-w-lg mx-auto mb-10 text-lg leading-relaxed">
-              Upload your high-resolution artwork to inject Engine V5 Anti-AI poisoning. 
-              Decoupled GPU workers will process your request in the background.
+            <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.3em] mb-2">Protocol Tier</p>
+            <h3 className="text-xl font-serif text-white">{profile?.subscription_status?.toUpperCase() || 'STANDARD'}</h3>
+          </motion.div>
+
+          <motion.div variants={item} className="glass-card rounded-3xl p-8 group border-gold-500/20 bg-gold-500/5">
+            <div className="flex items-center justify-between mb-8">
+              <div className="w-10 h-10 bg-gold-500/20 rounded-xl flex items-center justify-center border border-gold-500/30">
+                <CreditCard className="text-gold-500 w-5 h-5" />
+              </div>
+              <Zap className="text-gold-500 w-4 h-4 animate-pulse" />
+            </div>
+            <p className="text-gold-500/60 text-[10px] font-bold uppercase tracking-[0.3em] mb-2">Available Credits</p>
+            <h3 className="text-xl font-serif text-gold-500">{profile?.credits_remaining || 0} PRC</h3>
+          </motion.div>
+        </motion.div>
+
+        {/* Primary Action Center */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="glass-card rounded-[40px] p-16 text-center relative overflow-hidden group shadow-2xl shadow-black/50"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-gold-500/10 via-transparent to-transparent opacity-50" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-gold-500/5 blur-[100px] rounded-full" />
+          
+          <div className="relative z-10">
+            <motion.div 
+              animate={isUploading ? { scale: [1, 1.1, 1], rotate: [0, 180, 360] } : {}}
+              transition={{ repeat: Infinity, duration: 4 }}
+              className="w-24 h-24 bg-gold-500/10 rounded-[32px] flex items-center justify-center mx-auto mb-10 border border-gold-500/20 shadow-xl shadow-gold-500/5"
+            >
+              <Upload className="text-gold-500 w-10 h-10" />
+            </motion.div>
+            
+            <h2 className="text-[var(--font-size-xl)] font-serif mb-6 text-gradient">Protect Your Masterpiece.</h2>
+            <p className="text-white/40 max-w-xl mx-auto mb-12 text-lg leading-relaxed">
+              Inject your high-resolution artwork into the SANFA Enclave. 
+              Our decoupled GPU workers will perform a <span className="text-gold-400 font-bold italic">Neural Collapse</span> protocol in silence.
             </p>
-            <button 
+            
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleProtect}
               disabled={isUploading}
-              className="bg-white text-black font-semibold px-12 py-4 rounded-full hover:bg-[#C9A84C] hover:text-black disabled:opacity-50 transition-all flex items-center gap-3 mx-auto shadow-xl hover:shadow-[#C9A84C]/20"
+              className="bg-white text-black px-16 py-5 rounded-full text-lg font-bold hover:bg-gold-500 transition-all shadow-2xl hover:shadow-gold-500/30 flex items-center gap-4 mx-auto disabled:opacity-50"
             >
-              {isUploading ? 'Engaging Engine...' : 'Select & Protect'}
-              <Zap className="w-4 h-4 fill-current" />
-            </button>
+              {isUploading ? 'Initializing Neural Tunnel...' : 'Select & Scramble'}
+              <Zap className={`w-5 h-5 ${isUploading ? 'animate-bounce' : 'fill-current'}`} />
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Asset Grid */}
-        <div className="mt-20">
-          <div className="flex items-center justify-between mb-8">
+        {/* Asset Grid Section */}
+        <section className="mt-24">
+          <div className="flex items-center justify-between mb-12 border-b border-white/5 pb-6">
             <h3 className="text-2xl font-serif flex items-center gap-4">
-              <Grid className="text-[#C9A84C] w-6 h-6" />
-              Vault Library
+              <LayoutGrid className="text-gold-500 w-6 h-6" />
+              Vault Enclave <span className="text-white/20 text-sm font-sans font-bold ml-2 tracking-widest">LATEST DEPOSITS</span>
             </h3>
+            <button className="text-[10px] font-bold uppercase tracking-[0.3em] text-white/30 hover:text-white transition-all">View All Archives</button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {assets.map((asset) => (
-              <div key={asset.id} className="bg-[#1A1A1A] border border-white/5 rounded-2xl p-4 group hover:border-[#C9A84C]/30 transition-all">
-                <div className="aspect-square bg-black/40 rounded-xl mb-4 overflow-hidden relative">
-                  {asset.status === 'completed' ? (
-                    <img src={asset.protected_url || asset.original_url} alt={asset.original_name} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-3">
-                      <Clock className="w-8 h-8 text-white/10 animate-spin" />
-                      <span className="text-[10px] uppercase tracking-widest text-white/20">Processing</span>
+          <motion.div 
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+          >
+            <AnimatePresence>
+              {assets.map((asset) => (
+                <motion.div 
+                  key={asset.id} 
+                  variants={item}
+                  layout
+                  className="glass-card rounded-[2rem] p-5 group cursor-pointer"
+                >
+                  <div className="aspect-[4/5] bg-black/40 rounded-2xl mb-5 overflow-hidden relative">
+                    {asset.status === 'completed' ? (
+                      <motion.img 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 0.7 }}
+                        whileHover={{ opacity: 1 }}
+                        src={asset.protected_url || asset.original_url} 
+                        alt={asset.original_name} 
+                        className="w-full h-full object-cover transition-opacity duration-500" 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+                        <div className="relative">
+                          <Clock className="w-10 h-10 text-gold-500/20" />
+                          <motion.div 
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+                            className="absolute inset-0 border-2 border-t-gold-500 border-transparent rounded-full"
+                          />
+                        </div>
+                        <span className="text-[10px] uppercase tracking-widest text-gold-500/40 font-bold">Neural Sync...</span>
+                      </div>
+                    )}
+                    <div className="absolute top-4 right-4">
+                      {asset.status === 'completed' ? (
+                        <div className="bg-emerald-500 p-1.5 rounded-lg shadow-lg">
+                          <CheckCircle className="w-4 h-4 text-white" />
+                        </div>
+                      ) : (
+                        <div className="bg-gold-500 p-1.5 rounded-lg shadow-lg">
+                          <Zap className="w-4 h-4 text-black animate-pulse" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <div className="absolute top-2 right-2">
-                    {asset.status === 'completed' ? <CheckCircle className="w-4 h-4 text-[#10b981]" /> : <Zap className="w-4 h-4 text-[#C9A84C] animate-pulse" />}
                   </div>
-                </div>
-                <h4 className="text-sm font-sans font-medium truncate mb-1">{asset.original_name}</h4>
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-white/30 uppercase tracking-tighter">
-                    {new Date(asset.created_at).toLocaleDateString()}
-                  </span>
-                  <span className="text-[10px] text-[#C9A84C] font-bold">
-                    {asset.clip_distance ? `${Math.round(asset.clip_distance * 100)}% Confusion` : 'PROTECTING'}
-                  </span>
-                </div>
-              </div>
-            ))}
+
+                  <h4 className="text-sm font-sans font-bold truncate mb-2 px-1">{asset.original_name}</h4>
+                  
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] text-white/30 uppercase tracking-widest font-bold">
+                      {new Date(asset.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <div className="w-1 h-1 bg-gold-500 rounded-full" />
+                      <span className="text-[10px] text-gold-500 font-black tracking-tighter">
+                        {asset.clip_distance ? `${Math.round(asset.clip_distance * 100)}% CONFUSION` : 'READY'}
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
 
             {assets.length === 0 && !isUploading && (
-              <div className="col-span-full py-20 bg-white/[0.02] border border-dashed border-white/5 rounded-3xl flex flex-col items-center justify-center gap-4">
-                <ImageIcon className="w-12 h-12 text-white/5" />
-                <span className="text-white/20 font-sans tracking-widest uppercase text-xs">No assets in enclave</span>
-              </div>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="col-span-full py-32 bg-white/[0.02] border border-dashed border-white/5 rounded-[3rem] flex flex-col items-center justify-center gap-6"
+              >
+                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center">
+                  <ImageIcon className="w-8 h-8 text-white/10" />
+                </div>
+                <div className="text-center">
+                  <span className="text-white font-serif text-xl block mb-2">The Enclave is Empty.</span>
+                  <span className="text-white/20 font-sans tracking-[0.2em] uppercase text-[10px] font-bold">Secure your legacy today</span>
+                </div>
+              </motion.div>
             )}
-          </div>
-        </div>
+          </motion.div>
+        </section>
       </main>
+
+      {/* Floating Support Info */}
+      <div className="fixed bottom-8 right-8 z-[70]">
+        <div className="glass px-6 py-3 rounded-2xl flex items-center gap-3 border-gold-500/20">
+          <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-white/50">Cluster v5.2 Online</span>
+        </div>
+      </div>
     </div>
   );
 }

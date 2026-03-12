@@ -1,13 +1,69 @@
-﻿@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #0a0a0b;
-  --foreground: #f3f4f6;
+@layer base {
+  :root {
+    /* SaaS Platinum Palette */
+    --background: 240 10% 3.9%;    /* Zinc 950 */
+    --foreground: 0 0% 98%;        /* Zinc 50 */
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 43 53% 54%;         /* Burnished Gold #C9A84C */
+    --primary-foreground: 0 0% 9%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    --radius: 0.75rem;
+
+    /* Fluid Typography (8pt Grid compliant) */
+    --font-size-base: clamp(1rem, 0.95vw + 0.75rem, 1.125rem);
+    --font-size-lg: clamp(1.25rem, 1.2vw + 1rem, 1.5rem);
+    --font-size-xl: clamp(1.5rem, 2vw + 1.2rem, 2.25rem);
+    --font-size-2xl: clamp(2rem, 4vw + 1.5rem, 3.5rem);
+    --font-size-3xl: clamp(3rem, 6vw + 2rem, 5.5rem);
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-black/40 backdrop-blur-xl border border-white/10;
+  }
+  
+  .glass-card {
+    @apply bg-[#1A1A1B]/60 backdrop-blur-lg border border-white/5 hover:border-white/10 transition-all duration-300;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-white via-white/90 to-white/40;
+  }
+
+  .gold-gradient {
+    @apply bg-gradient-to-br from-[#E6C97F] via-[#C9A84C] to-[#8C6D27];
+  }
+
+  .noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    mask-image: radial-gradient(circle at center, black, transparent);
+  }
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  @apply bg-[#0a0a0b] text-[#f3f4f6] font-sans antialiased selection:bg-[#C9A84C]/30 selection:text-white;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, .font-serif {
+  @apply tracking-tight leading-[1.1];
 }
