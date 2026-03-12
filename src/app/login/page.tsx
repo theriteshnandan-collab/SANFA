@@ -9,14 +9,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 export const dynamic = 'force-dynamic';
 
 // Apple-Standard Spring Configurations
-const organicSpring = { type: "spring", stiffness: 300, damping: 30, mass: 1 };
-const entranceSpring = { type: "spring", stiffness: 100, damping: 20, mass: 1 };
+const organicSpring = { type: "spring", stiffness: 300, damping: 30, mass: 1 } as any;
+const entranceSpring = { type: "spring", stiffness: 100, damping: 20, mass: 1 } as any;
+
 
 const fadeInUp = {
   initial: { opacity: 0, y: 30 },
   animate: { opacity: 1, y: 0 },
   transition: organicSpring
-};
+} as any;
+
 
 export default function LoginPage() {
   const supabase = createClient();

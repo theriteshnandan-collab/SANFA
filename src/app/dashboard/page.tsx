@@ -8,8 +8,9 @@ import { motion, AnimatePresence, useSpring } from 'framer-motion';
 export const dynamic = 'force-dynamic';
 
 // Apple-Standard Spring Configurations
-const organicSpring = { type: "spring", stiffness: 300, damping: 30, mass: 1 };
-const entranceSpring = { type: "spring", stiffness: 100, damping: 20, mass: 1 };
+const organicSpring = { type: "spring", stiffness: 300, damping: 30, mass: 1 } as any;
+const entranceSpring = { type: "spring", stiffness: 100, damping: 20, mass: 1 } as any;
+
 
 const container = {
   hidden: { opacity: 0 },
@@ -20,7 +21,8 @@ const container = {
       delayChildren: 0.2
     }
   }
-};
+} as any;
+
 
 const item = {
   hidden: { opacity: 0, y: 30 },
@@ -29,7 +31,8 @@ const item = {
     y: 0,
     transition: organicSpring
   }
-};
+} as any;
+
 
 export default function Dashboard() {
   const supabase = useMemo(() => createClient(), []);

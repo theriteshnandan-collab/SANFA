@@ -6,8 +6,9 @@ import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'fra
 import { useRef, useEffect, useState } from 'react';
 
 // Apple-Standard Spring Configurations
-const organicSpring = { type: "spring", stiffness: 300, damping: 30, mass: 1 };
-const entranceSpring = { type: "spring", stiffness: 100, damping: 20, mass: 1 };
+const organicSpring = { type: "spring", stiffness: 300, damping: 30, mass: 1 } as any;
+const entranceSpring = { type: "spring", stiffness: 100, damping: 20, mass: 1 } as any;
+
 
 const fadeInUp: any = {
   hidden: { opacity: 0, y: 40 },
