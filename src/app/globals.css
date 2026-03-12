@@ -4,66 +4,68 @@
 
 @layer base {
   :root {
-    /* SaaS Platinum Palette */
-    --background: 240 10% 3.9%;    /* Zinc 950 */
-    --foreground: 0 0% 98%;        /* Zinc 50 */
-    --card: 240 10% 3.9%;
+    /* God-Tier Palette (Apple Standard) */
+    --background: 240 10% 2%;     /* Deep OLED Black */
+    --foreground: 0 0% 98%;       /* Pure Off-White */
+    --card: 240 10% 2%;
     --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
+    --popover: 240 10% 2%;
     --popover-foreground: 0 0% 98%;
-    --primary: 43 53% 54%;         /* Burnished Gold #C9A84C */
+    --primary: 43 53% 54%;        /* Burnished Gold */
     --primary-foreground: 0 0% 9%;
-    --secondary: 240 3.7% 15.9%;
+    --secondary: 240 3.7% 10%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --muted: 240 3.7% 10%;
+    --muted-foreground: 240 5% 50%;
+    --accent: 43 53% 54%;
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
-    --radius: 0.75rem;
+    --border: 240 3.7% 8%;
+    --input: 240 3.7% 8%;
+    --ring: 43 53% 54%;
+    --radius: 1.25rem;            /* More organic rounding */
 
-    /* Fluid Typography (8pt Grid compliant) */
-    --font-size-base: clamp(1rem, 0.95vw + 0.75rem, 1.125rem);
-    --font-size-lg: clamp(1.25rem, 1.2vw + 1rem, 1.5rem);
-    --font-size-xl: clamp(1.5rem, 2vw + 1.2rem, 2.25rem);
-    --font-size-2xl: clamp(2rem, 4vw + 1.5rem, 3.5rem);
-    --font-size-3xl: clamp(3rem, 6vw + 2rem, 5.5rem);
+    /* Airy Typography (Apple Fluidity) */
+    --font-size-base: clamp(1rem, 0.5vw + 0.85rem, 1.125rem);
+    --font-size-lg: clamp(1.25rem, 1vw + 1.1rem, 1.75rem);
+    --font-size-xl: clamp(1.75rem, 2.5vw + 1.5rem, 2.75rem);
+    --font-size-2xl: clamp(2.5rem, 5vw + 2rem, 4.5rem);
+    --font-size-3xl: clamp(4rem, 8vw + 3rem, 7rem);
   }
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-black/40 backdrop-blur-xl border border-white/10;
+  .glass-v2 {
+    @apply bg-black/30 backdrop-blur-[40px] saturate-150 border border-white/[0.05];
   }
   
-  .glass-card {
-    @apply bg-[#1A1A1B]/60 backdrop-blur-lg border border-white/5 hover:border-white/10 transition-all duration-300;
+  .glass-card-v2 {
+    @apply bg-white/[0.02] backdrop-blur-[30px] border border-white/[0.05] hover:border-white/[0.1] hover:bg-white/[0.04] transition-all duration-500;
   }
 
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-br from-white via-white/90 to-white/40;
+  .text-aura {
+    @apply bg-clip-text text-transparent bg-gradient-to-b from-white via-white/90 to-white/60;
   }
 
-  .gold-gradient {
-    @apply bg-gradient-to-br from-[#E6C97F] via-[#C9A84C] to-[#8C6D27];
+  .glow-spectral {
+    background: radial-gradient(circle at center, hsla(43, 53%, 54%, 0.15) 0%, transparent 70%);
   }
 
-  .noise {
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    mask-image: radial-gradient(circle at center, black, transparent);
+  .noise-fine {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.05;
   }
 }
 
 body {
-  @apply bg-[#0a0a0b] text-[#f3f4f6] font-sans antialiased selection:bg-[#C9A84C]/30 selection:text-white;
+  @apply bg-[#030304] text-[#f3f4f6] font-sans antialiased selection:bg-[#C9A84C]/40;
   font-size: var(--font-size-base);
-  line-height: 1.6;
+  line-height: 1.7;           /* Airier leading */
+  letter-spacing: -0.01em;     /* Tighter Inter Tracking */
 }
 
 h1, h2, h3, h4, .font-serif {
-  @apply tracking-tight leading-[1.1];
+  @apply tracking-[-0.03em] leading-[1.05];
 }
+
