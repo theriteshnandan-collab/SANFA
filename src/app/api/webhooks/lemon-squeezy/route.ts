@@ -2,7 +2,7 @@
 // This handles subscription updates and payment success to grant user credits.
 
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-server';
 import crypto from 'crypto';
 
 const LE_SIGNING_SECRET = process.env.LEMON_SQUEEZY_WEBHOOK_SECRET!;
@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
         if (productId === 'PRO_PLAN_ID') { quota = 100; role = 'pro'; }
         if (productId === 'GOD_MODE_ID') { quota = 9999; role = 'god_mode'; }
 
+        const supabase = await createClient();
         await supabase
             .from('profiles')
             .update({ 
