@@ -11,106 +11,152 @@ export default function SovereignHero() {
         xmlns="http://www.w3.org/2000/svg"
         className="w-full h-full text-black"
       >
-        {/* The Lounge Chair (Minimalist Line) */}
+        {/* Subtle Background Pattern (Zen dots) */}
+        <pattern id="pattern-dots" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r="1" fill="currentColor" fillOpacity="0.05" />
+        </pattern>
+        <rect width="800" height="600" fill="url(#pattern-dots)" />
+
+        {/* The Lounge Chair (Intricate Minimalist Line) */}
         <motion.path
-          d="M200,450 Q250,450 300,400 L450,250 Q500,200 450,150 L400,100"
+          d="M180,480 Q250,480 320,420 L480,260 Q530,210 480,160 L420,110 C400,90 380,100 370,120"
           stroke="currentColor"
-          strokeWidth="1.5"
+          strokeWidth="1.2"
           strokeLinecap="round"
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
-          transition={{ duration: 2, ease: "easeInOut" }}
+          transition={{ duration: 2.5, ease: "easeInOut" }}
+        />
+        <motion.path
+          d="M200,485 L180,510 M500,240 L520,265"
+          stroke="currentColor"
+          strokeWidth="0.8"
+          strokeLinecap="round"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.3 }}
+          transition={{ delay: 2 }}
         />
 
-        {/* The Character (Girl - Abstract Fine Line) */}
-        <g className="opacity-80">
-          {/* Body/Torso */}
+        {/* The Character (Girl - Detailed Fine Line) */}
+        <g className="character-group">
+          {/* Detailed Hair (Whimsical curls) */}
           <motion.path
-            d="M320,380 Q350,350 380,300 Q400,250 390,200"
+            d="M440,140 C460,120 480,140 470,170 C480,180 470,210 450,200"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="1"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 1.5, delay: 1.5 }}
+          />
+          
+          {/* Face Outline & Peaceful Expression */}
+          <motion.path
+            d="M435,165 C440,195 420,210 400,205"
+            stroke="currentColor"
+            strokeWidth="1.2"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 1, delay: 1 }}
+          />
+          <motion.path
+            d="M410,185 Q415,190 420,185"
+            stroke="currentColor"
+            strokeWidth="0.8"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 2.2 }}
+          />
+
+          {/* Torso & Relaxed Posture */}
+          <motion.path
+            d="M400,205 Q350,250 330,350 Q320,400 350,430 L400,450"
+            stroke="currentColor"
+            strokeWidth="1.5"
             strokeLinecap="round"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 2, delay: 0.5, ease: "easeInOut" }}
+            transition={{ duration: 2, delay: 0.5 }}
           />
-          {/* Head */}
-          <motion.circle
-            cx="400"
-            cy="160"
-            r="25"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 1.5 }}
-          />
-          {/* Arms holding phone */}
+
+          {/* Arms holding phone (Articulated) */}
           <motion.path
-            d="M360,280 Q380,300 410,290"
+            d="M360,280 C360,320 380,310 420,300"
             stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
+            strokeWidth="1.2"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
             transition={{ duration: 1, delay: 1.8 }}
           />
-          {/* The Phone (Small Rectangle) */}
-          <motion.rect
-            x="415"
-            y="270"
-            width="15"
-            height="30"
-            rx="2"
+          
+          {/* Hand holding phone detail */}
+          <motion.path
+            d="M415,295 C410,290 410,280 420,275"
             stroke="currentColor"
             strokeWidth="1"
-            initial={{ opacity: 0, scale: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 2.5 }}
+          />
+
+          {/* The Phone (Sleek minimalist) */}
+          <motion.rect
+            x="425"
+            y="270"
+            width="18"
+            height="35"
+            rx="3"
+            stroke="currentColor"
+            strokeWidth="1"
+            initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 2.2 }}
+            transition={{ duration: 0.8, delay: 2.7 }}
+          />
+          <motion.path
+            d="M432,275 L436,275"
+            stroke="currentColor"
+            strokeWidth="0.5"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.4 }}
+            transition={{ delay: 3 }}
           />
         </g>
 
-        {/* The Hot Pink Shield Arc (Emotional Core) */}
+        {/* The Hot Pink Shield Arc (Master-Craft Fidelity) */}
         <motion.path
-          d="M150,300 A250,250 0 0,1 650,300"
+          d="M120,320 C120,120 680,120 680,320"
           stroke="#FF0066"
-          strokeWidth="3"
+          strokeWidth="2.5"
           strokeLinecap="round"
-          strokeDasharray="10 10"
           initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ 
-            pathLength: 1, 
-            opacity: 0.6,
-            strokeDashoffset: [0, -20]
-          }}
-          transition={{ 
-            pathLength: { duration: 2.5, ease: "easeInOut" },
-            opacity: { duration: 1, delay: 1 },
-            strokeDashoffset: { duration: 2, repeat: Infinity, ease: "linear" }
-          }}
+          animate={{ pathLength: 1, opacity: 0.8 }}
+          transition={{ duration: 3, ease: "circOut", delay: 1 }}
+        />
+        <motion.path
+          d="M150,320 C150,180 650,180 650,320"
+          stroke="#FF0066"
+          strokeWidth="1"
+          strokeLinecap="round"
+          strokeDasharray="4 8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.4 }}
+          transition={{ duration: 2, delay: 2 }}
         />
 
-        {/* Floating security nodes */}
-        <motion.circle
-          cx="120"
-          cy="280"
-          r="4"
-          fill="#FF0066"
-          animate={{ y: [0, -10, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.circle
-          cx="680"
-          cy="320"
-          r="4"
-          fill="#FF0066"
-          animate={{ y: [0, 15, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-        />
+        {/* Floating Semantic Nodes (Privacy, Encryption, Speed) */}
+        {[
+          { cx: 100, cy: 300, delay: 0 },
+          { cx: 700, cy: 350, delay: 1 },
+          { cx: 400, cy: 80, delay: 2 }
+        ].map((node, i) => (
+          <motion.g key={i} animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity, delay: node.delay }}>
+            <circle cx={node.cx} cy={node.cy} r="3" fill="#FF0066" />
+            <circle cx={node.cx} cy={node.cy} r="10" stroke="#FF0066" strokeWidth="0.5" strokeOpacity="0.2" />
+          </motion.g>
+        ))}
       </svg>
       
-      {/* Ambient Glow */}
-      <div className="absolute inset-0 bg-radial-gradient from-transparent to-white/10 pointer-events-none" />
+      {/* Texture grain overlay */}
+      <div className="absolute inset-0 bg-[#000000]/[0.02] mix-blend-overlay pointer-events-none" />
     </div>
   );
 }
