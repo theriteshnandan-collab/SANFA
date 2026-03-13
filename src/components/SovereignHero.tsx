@@ -12,10 +12,8 @@ export default function SovereignHero() {
   const springY = useSpring(mouseY, { stiffness: 100, damping: 30 });
 
   // Parallax transformations
-  const heroX = useTransform(springX, [-500, 500], [-15, 15]);
-  const heroY = useTransform(springY, [-500, 500], [-15, 15]);
-  const bgX = useTransform(springX, [-500, 500], [10, -10]);
-  const bgY = useTransform(springY, [-500, 500], [10, -10]);
+  const heroX = useTransform(springX, [-500, 500], [-10, 10]);
+  const heroY = useTransform(springY, [-500, 500], [-10, 10]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -30,16 +28,9 @@ export default function SovereignHero() {
 
   return (
     <div className="relative w-full max-w-2xl mx-auto aspect-[4/3] flex items-center justify-center overflow-hidden cursor-default group">
-      {/* Background Zen Pattern (Parallax) */}
-      <motion.div 
-        className="absolute inset-x-[-10%] inset-y-[-10%] opacity-[0.05] pointer-events-none" 
-        style={{ 
-          backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', 
-          backgroundSize: '40px 40px',
-          x: bgX,
-          y: bgY
-        }} 
-      />
+      {/* Background Zen Pattern */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+           style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
 
       <motion.div
         className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none"
@@ -48,65 +39,76 @@ export default function SovereignHero() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.5, ease: "easeOut" }}
       >
-        {/* The God-Tier Illustration */}
-        <motion.img
-          src="/assets/god-hero.png"
-          alt="Secure and Relaxed with Sanfa"
-          className="w-full h-full object-contain drop-shadow-[0_40px_100px_rgba(255,0,102,0.08)]"
-          animate={{ 
-            y: [0, -20, 0],
-          }}
-          transition={{ 
-            duration: 10, 
-            repeat: Infinity, 
-            ease: "easeInOut" 
-          }}
-        />
+        {/* God-Level Hand-Drawn SVG Illustration (Pure Code) */}
+        <svg viewBox="0 0 800 600" className="w-[90%] h-auto preserve-3d">
+          <defs>
+            <filter id="pencil" x="-20%" y="-20%" width="140%" height="140%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise" />
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+          </defs>
 
-        {/* Dynamic Glimmer Nodes (Electronic Pulse) */}
-        {[
-          { top: '22%', left: '18%', delay: 0 },
-          { top: '78%', left: '82%', delay: 1.5 },
-          { top: '15%', left: '75%', delay: 3 },
-          { top: '65%', left: '10%', delay: 4.5 },
-        ].map((node, i) => (
-          <motion.div
-            key={i}
-            className="absolute rounded-full"
-            style={{ 
-              top: node.top, 
-              left: node.left,
-              backgroundColor: '#FF0066',
-              boxShadow: '0 0 15px rgba(255, 0, 102, 0.5)'
-            }}
-            animate={{ 
-              width: [3, 5, 3],
-              height: [3, 5, 3],
-              opacity: [0.3, 1, 0.3],
-              filter: ['blur(1px)', 'blur(2px)', 'blur(1px)']
-            }}
-            transition={{ 
-              duration: 4, 
-              repeat: Infinity, 
-              delay: node.delay,
-              ease: "easeInOut" 
-            }}
+          {/* The Shield Arc (Geometric Protection) */}
+          <motion.path
+            d="M150,550 C150,550 50,300 150,50 C150,50 400,0 650,50 C650,50 750,300 650,550"
+            fill="none"
+            stroke="#FF0066"
+            strokeWidth="0.5"
+            strokeDasharray="5,10"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 3, ease: "easeInOut" }}
           />
-        ))}
 
-        {/* Protective Pulse Ring */}
-        <motion.div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] h-[85%] border-[0.5px] border-[#FF0066]/10 rounded-full"
-          animate={{ 
-            scale: [1, 1.05, 1],
-            opacity: [0.1, 0.2, 0.1]
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        />
+          {/* Human Outline (Simplified Artisanal Style) */}
+          <g filter="url(#pencil)" stroke="#111" fill="none" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+            {/* Chair Contour */}
+            <path d="M250,500 L550,500 C580,500 600,480 600,450 L580,250 C570,220 540,200 510,210 L300,280 C270,290 250,310 250,340 Z" />
+            
+            {/* Person Relaxed (Flowing Artist Lines) */}
+            <motion.g
+              animate={{ 
+                rotate: [-0.5, 0.5, -0.5],
+                y: [0, -2, 0]
+              }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            >
+                {/* Torso & Head */}
+                <path d="M400,350 Q410,300 405,250 Q400,200 430,180 Q460,160 440,140 Q420,130 400,145 Q380,160 385,185 Q390,210 395,250" />
+                {/* Hair (Lemonade Quirk) */}
+                <path d="M430,140 Q450,120 440,100 Q430,90 415,105 Q400,120 405,135 M420,100 Q410,80 400,90" />
+                {/* Legs (Relaxed) */}
+                <path d="M400,350 Q450,370 500,380 Q550,390 580,450 M410,360 Q430,420 480,440" />
+                {/* Arms & Phone */}
+                <path d="M405,250 Q360,270 350,320 Q340,350 380,360" />
+                <rect x="340" y="320" width="15" height="25" rx="2" transform="rotate(-15 347.5 332.5)" />
+            </motion.g>
+          </g>
+
+          {/* Electronic Protection Nodes (Blinking S-Tier) */}
+          {[
+            { cx: 150, cy: 300 },
+            { cx: 650, cy: 300 },
+            { cx: 400, cy: 50 },
+          ].map((node, i) => (
+            <motion.circle
+              key={i}
+              cx={node.cx}
+              cy={node.cy}
+              r="4"
+              fill="#FF0066"
+              animate={{ opacity: [0.2, 1, 0.2], scale: [1, 1.5, 1] }}
+              transition={{ duration: 3, repeat: Infinity, delay: i * 1 }}
+            />
+          ))}
+        </svg>
+
+        {/* Dynamic Glow Bloom */}
+        <div className="absolute w-[80%] h-[80%] bg-[#FF0066]/5 rounded-full filter blur-[120px] pointer-events-none" />
       </motion.div>
       
       {/* Premium Finish Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
     </div>
   );
 }
