@@ -7,13 +7,17 @@ export default function SovereignHero() {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  // Smooth springs for cursor parallax
-  const springX = useSpring(mouseX, { stiffness: 100, damping: 30 });
-  const springY = useSpring(mouseY, { stiffness: 100, damping: 30 });
+  // High-fidelity spring configurations
+  const springX = useSpring(mouseX, { stiffness: 60, damping: 25 });
+  const springY = useSpring(mouseY, { stiffness: 60, damping: 25 });
 
-  // Parallax transformations
-  const heroX = useTransform(springX, [-500, 500], [-10, 10]);
-  const heroY = useTransform(springY, [-500, 500], [-10, 10]);
+  // Triple-layer parallax transformations for 'Cooler' depth
+  const heroX = useTransform(springX, [-500, 500], [-25, 25]);
+  const heroY = useTransform(springY, [-500, 500], [-25, 25]);
+  const bgX = useTransform(springX, [-500, 500], [20, -20]);
+  const bgY = useTransform(springY, [-500, 500], [20, -20]);
+  const nodeX = useTransform(springX, [-500, 500], [-40, 40]);
+  const nodeY = useTransform(springY, [-500, 500], [-40, 40]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -27,88 +31,91 @@ export default function SovereignHero() {
   }, []);
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto aspect-[4/3] flex items-center justify-center overflow-hidden cursor-default group">
-      {/* Background Zen Pattern */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
-           style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '30px 30px' }} />
+    <div className="relative w-full max-w-3xl mx-auto aspect-[4/3] flex items-center justify-center overflow-visible cursor-default group">
+      {/* Layer 0: Background Zen Pattern (Deep Parallax) */}
+      <motion.div 
+        className="absolute inset-x-[-15%] inset-y-[-15%] opacity-[0.04] pointer-events-none" 
+        style={{ 
+          backgroundImage: 'radial-gradient(circle, #000 1.2px, transparent 1.2px)', 
+          backgroundSize: '45px 45px',
+          x: bgX,
+          y: bgY
+        }} 
+      />
 
+      {/* Layer 1: Ambient Protective Bloom */}
+      <div className="absolute w-[90%] h-[90%] bg-gradient-to-br from-[#FF0066]/5 via-white to-transparent rounded-full filter blur-[120px] pointer-events-none animate-pulse" />
+
+      {/* Layer 2: The High-Fidelity Masterpiece (Restored Girl) */}
       <motion.div
-        className="relative z-10 w-full h-full flex items-center justify-center pointer-events-none"
+        className="relative z-10 w-full h-full flex items-center justify-center"
         style={{ x: heroX, y: heroY }}
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.5, ease: "easeOut" }}
+        initial={{ opacity: 0, scale: 0.95, y: 30 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
       >
-        {/* God-Level Hand-Drawn SVG Illustration (Pure Code) */}
-        <svg viewBox="0 0 800 600" className="w-[90%] h-auto preserve-3d">
-          <defs>
-            <filter id="pencil" x="-20%" y="-20%" width="140%" height="140%">
-              <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise" />
-              <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" xChannelSelector="R" yChannelSelector="G" />
-            </filter>
-          </defs>
+        <motion.img
+          src="/assets/god-hero.png"
+          alt="Sovereign Protection - Relaxed User"
+          className="w-full h-full object-contain filter drop-shadow-[0_45px_120px_rgba(255,0,102,0.12)]"
+          animate={{ 
+            y: [0, -25, 0],
+          }}
+          transition={{ 
+            duration: 12, 
+            repeat: Infinity, 
+            ease: "easeInOut" 
+          }}
+        />
 
-          {/* The Shield Arc (Geometric Protection) */}
-          <motion.path
-            d="M150,550 C150,550 50,300 150,50 C150,50 400,0 650,50 C650,50 750,300 650,550"
-            fill="none"
-            stroke="#FF0066"
-            strokeWidth="0.5"
-            strokeDasharray="5,10"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 3, ease: "easeInOut" }}
-          />
-
-          {/* Human Outline (Simplified Artisanal Style) */}
-          <g filter="url(#pencil)" stroke="#111" fill="none" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-            {/* Chair Contour */}
-            <path d="M250,500 L550,500 C580,500 600,480 600,450 L580,250 C570,220 540,200 510,210 L300,280 C270,290 250,310 250,340 Z" />
-            
-            {/* Person Relaxed (Flowing Artist Lines) */}
-            <motion.g
-              animate={{ 
-                rotate: [-0.5, 0.5, -0.5],
-                y: [0, -2, 0]
-              }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            >
-                {/* Torso & Head */}
-                <path d="M400,350 Q410,300 405,250 Q400,200 430,180 Q460,160 440,140 Q420,130 400,145 Q380,160 385,185 Q390,210 395,250" />
-                {/* Hair (Lemonade Quirk) */}
-                <path d="M430,140 Q450,120 440,100 Q430,90 415,105 Q400,120 405,135 M420,100 Q410,80 400,90" />
-                {/* Legs (Relaxed) */}
-                <path d="M400,350 Q450,370 500,380 Q550,390 580,450 M410,360 Q430,420 480,440" />
-                {/* Arms & Phone */}
-                <path d="M405,250 Q360,270 350,320 Q340,350 380,360" />
-                <rect x="340" y="320" width="15" height="25" rx="2" transform="rotate(-15 347.5 332.5)" />
-            </motion.g>
-          </g>
-
-          {/* Electronic Protection Nodes (Blinking S-Tier) */}
+        {/* Layer 3: Dynamic Security Nodes (Parallax Bloom) */}
+        <motion.div style={{ x: nodeX, y: nodeY }} className="absolute inset-0 pointer-events-none">
           {[
-            { cx: 150, cy: 300 },
-            { cx: 650, cy: 300 },
-            { cx: 400, cy: 50 },
+            { top: '25%', left: '20%', delay: 0 },
+            { top: '75%', left: '80%', delay: 2 },
+            { top: '15%', left: '70%', delay: 4 },
+            { top: '60%', left: '15%', delay: 6 },
           ].map((node, i) => (
-            <motion.circle
+            <motion.div
               key={i}
-              cx={node.cx}
-              cy={node.cy}
-              r="4"
-              fill="#FF0066"
-              animate={{ opacity: [0.2, 1, 0.2], scale: [1, 1.5, 1] }}
-              transition={{ duration: 3, repeat: Infinity, delay: i * 1 }}
+              className="absolute w-3 h-3 rounded-full"
+              style={{ 
+                top: node.top, 
+                left: node.left,
+                backgroundColor: '#FF0066',
+                boxShadow: '0 0 25px rgba(255, 0, 102, 0.6)'
+              }}
+              animate={{ 
+                scale: [1, 1.6, 1],
+                opacity: [0.3, 1, 0.3],
+                filter: ['blur(1px)', 'blur(3px)', 'blur(1px)']
+              }}
+              transition={{ 
+                duration: 5, 
+                repeat: Infinity, 
+                delay: node.delay,
+                ease: "easeInOut" 
+              }}
             />
           ))}
-        </svg>
+        </motion.div>
 
-        {/* Dynamic Glow Bloom */}
-        <div className="absolute w-[80%] h-[80%] bg-[#FF0066]/5 rounded-full filter blur-[120px] pointer-events-none" />
+        {/* Ambient Orbiting Ring */}
+        <motion.div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] h-[95%] border-[0.6px] border-[#FF0066]/15 rounded-full"
+          animate={{ 
+            rotateZ: 360,
+            scale: [1, 1.02, 1],
+          }}
+          transition={{ 
+            rotateZ: { duration: 60, repeat: Infinity, ease: "linear" },
+            scale: { duration: 10, repeat: Infinity, ease: "easeInOut" }
+          }}
+        />
       </motion.div>
       
-      {/* Premium Finish Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-white/10 to-transparent pointer-events-none" />
+      {/* Premium Silk Overlay */}
+      <div className="absolute inset-0 bg-white/[0.01] backdrop-blur-[1px] pointer-events-none rounded-[100px]" />
     </div>
   );
 }
