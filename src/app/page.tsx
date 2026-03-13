@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import LineIllustration from '@/components/LineIllustration';
+import RevolvingGlobe from '@/components/RevolvingGlobe';
+import SovereignHero from '@/components/SovereignHero';
 
 // Lemonade-Standard Spring Configurations
 const lemonSpring = { type: "spring", stiffness: 400, damping: 30, mass: 1 } as any;
@@ -105,11 +107,7 @@ export default function Home() {
                 ease: "easeInOut" 
               }}
             >
-               <img 
-                 src="/assets/sovereign-relax.png" 
-                 alt="Secure and Relaxed with Sanfa" 
-                 className="max-w-2xl mx-auto w-full h-auto drop-shadow-xl"
-               />
+               <SovereignHero />
             </motion.div>
           </motion.div>
         </section>
@@ -273,25 +271,9 @@ export default function Home() {
                   </div>
                </motion.div>
             </motion.div>
-            <motion.div 
-               className="order-1 lg:order-2 flex justify-center"
-               animate={{ 
-                 rotate: 360,
-                 y: [0, -20, 0],
-                 scale: [1, 1.05, 1]
-               }}
-               transition={{ 
-                 rotate: { duration: 60, repeat: Infinity, ease: "linear" },
-                 y: { duration: 5, repeat: Infinity, ease: "easeInOut" },
-                 scale: { duration: 8, repeat: Infinity, ease: "easeInOut" }
-               }}
-            >
-               <img 
-                 src="/assets/global-shield-infinite.png" 
-                 alt="Global Cryptographic Shield in Infinite Motion" 
-                 className="max-w-md w-full h-auto drop-shadow-2xl"
-               />
-            </motion.div>
+            <div className="order-1 lg:order-2 flex justify-center">
+               <RevolvingGlobe />
+            </div>
           </div>
         </section>
 
