@@ -93,8 +93,23 @@ export default function Home() {
               </div>
             </motion.div>
 
-            <motion.div variants={fadeInUp} className="relative">
-               <LineIllustration className="max-w-2xl mx-auto" />
+            <motion.div 
+              variants={fadeInUp} 
+              className="relative mt-20"
+              animate={{ 
+                y: [0, -15, 0],
+              }}
+              transition={{ 
+                duration: 6, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
+            >
+               <img 
+                 src="/assets/sovereign-relax.png" 
+                 alt="Secure and Relaxed with Sanfa" 
+                 className="max-w-2xl mx-auto w-full h-auto drop-shadow-xl"
+               />
             </motion.div>
           </motion.div>
         </section>
@@ -229,6 +244,54 @@ export default function Home() {
                  </div>
                ))}
              </div>
+          </div>
+        </section>
+
+        {/* Global Reach: The World Shield */}
+        <section className="py-32 px-6 bg-[#FFFFFF] overflow-hidden">
+          <div className="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={staggerContainer}
+              className="order-2 lg:order-1"
+            >
+               <motion.span variants={fadeInUp} className="text-lemon font-black text-[10px] uppercase tracking-[0.6em] block mb-6">Worldwide Security</motion.span>
+               <motion.h2 variants={fadeInUp} className="text-[var(--font-size-2xl)] mb-8">One enclave. <br /> <span className="text-lemon">Infinite scale.</span></motion.h2>
+               <motion.p variants={fadeInUp} className="text-xl text-gray-500 mb-12 max-w-lg leading-relaxed">
+                  Sanfa is a decentralized global protocol. From London to Tokyo, our cryptographic shield protects millions of assets in real-time, regardless of territory.
+               </motion.p>
+               <motion.div variants={fadeInUp} className="flex gap-12">
+                  <div>
+                     <span className="text-4xl font-black block mb-2">180+</span>
+                     <span className="text-gray-400 text-xs uppercase tracking-widest font-bold">Countries</span>
+                  </div>
+                  <div>
+                     <span className="text-4xl font-black block mb-2">99.9%</span>
+                     <span className="text-gray-400 text-xs uppercase tracking-widest font-bold">Uptime</span>
+                  </div>
+               </motion.div>
+            </motion.div>
+            <motion.div 
+               className="order-1 lg:order-2 flex justify-center"
+               animate={{ 
+                 rotate: 360,
+                 y: [0, -20, 0],
+                 scale: [1, 1.05, 1]
+               }}
+               transition={{ 
+                 rotate: { duration: 60, repeat: Infinity, ease: "linear" },
+                 y: { duration: 5, repeat: Infinity, ease: "easeInOut" },
+                 scale: { duration: 8, repeat: Infinity, ease: "easeInOut" }
+               }}
+            >
+               <img 
+                 src="/assets/global-shield-infinite.png" 
+                 alt="Global Cryptographic Shield in Infinite Motion" 
+                 className="max-w-md w-full h-auto drop-shadow-2xl"
+               />
+            </motion.div>
           </div>
         </section>
 
