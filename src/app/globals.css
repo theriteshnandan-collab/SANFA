@@ -26,12 +26,12 @@
     --ring: 335 100% 50%;
     --radius: 0.75rem;
 
-    /* Lemonade Typography (Clean & Bold) */
-    --font-size-base: clamp(1rem, 0.4vw + 0.9rem, 1.125rem);
-    --font-size-lg: clamp(1.25rem, 0.8vw + 1.1rem, 1.5rem);
-    --font-size-xl: clamp(1.75rem, 1.5vw + 1.5rem, 2.5rem);
-    --font-size-2xl: clamp(2.5rem, 4vw + 2rem, 4rem);
-    --font-size-3xl: clamp(3.5rem, 6vw + 3rem, 6rem);
+    /* Lemonade Typography (S-Tier Impact) */
+    --font-size-base: clamp(1.125rem, 0.5vw + 1rem, 1.25rem);
+    --font-size-lg: clamp(1.5rem, 1vw + 1.2rem, 2rem);
+    --font-size-xl: clamp(2.5rem, 2vw + 2rem, 3.5rem);
+    --font-size-2xl: clamp(4rem, 5vw + 3rem, 5.5rem);
+    --font-size-3xl: clamp(5rem, 8vw + 4rem, 8.5rem);
   }
 }
 

@@ -7,17 +7,15 @@ export default function SovereignHero() {
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
-  // High-fidelity spring configurations
-  const springX = useSpring(mouseX, { stiffness: 60, damping: 25 });
-  const springY = useSpring(mouseY, { stiffness: 60, damping: 25 });
+  // Elite-fidelity spring configurations
+  const springX = useSpring(mouseX, { stiffness: 50, damping: 20 });
+  const springY = useSpring(mouseY, { stiffness: 50, damping: 20 });
 
-  // Triple-layer parallax transformations for 'Cooler' depth
-  const heroX = useTransform(springX, [-500, 500], [-25, 25]);
-  const heroY = useTransform(springY, [-500, 500], [-25, 25]);
-  const bgX = useTransform(springX, [-500, 500], [20, -20]);
-  const bgY = useTransform(springY, [-500, 500], [20, -20]);
-  const nodeX = useTransform(springX, [-500, 500], [-40, 40]);
-  const nodeY = useTransform(springY, [-500, 500], [-40, 40]);
+  // Triple-layer parallax transformations
+  const heroX = useTransform(springX, [-500, 500], [-30, 30]);
+  const heroY = useTransform(springY, [-500, 500], [-30, 30]);
+  const nodeX = useTransform(springX, [-500, 500], [-50, 50]);
+  const nodeY = useTransform(springY, [-500, 500], [-50, 50]);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -31,91 +29,73 @@ export default function SovereignHero() {
   }, []);
 
   return (
-    <div className="relative w-full max-w-3xl mx-auto aspect-[4/3] flex items-center justify-center overflow-visible cursor-default group">
-      {/* Layer 0: Background Zen Pattern (Deep Parallax) */}
-      <motion.div 
-        className="absolute inset-x-[-15%] inset-y-[-15%] opacity-[0.04] pointer-events-none" 
-        style={{ 
-          backgroundImage: 'radial-gradient(circle, #000 1.2px, transparent 1.2px)', 
-          backgroundSize: '45px 45px',
-          x: bgX,
-          y: bgY
-        }} 
-      />
+    <div className="relative w-full max-w-4xl mx-auto aspect-[4/3] flex items-center justify-center overflow-visible cursor-default group">
+      
+      {/* Background Glow Bloom (Managed Properly) */}
+      <div className="absolute w-[100%] h-[100%] bg-gradient-to-br from-lemon/5 via-white to-transparent rounded-full filter blur-[150px] pointer-events-none animate-pulse" />
 
-      {/* Layer 1: Ambient Protective Bloom */}
-      <div className="absolute w-[90%] h-[90%] bg-gradient-to-br from-[#FF0066]/5 via-white to-transparent rounded-full filter blur-[120px] pointer-events-none animate-pulse" />
-
-      {/* Layer 2: The High-Fidelity Masterpiece (Restored Girl) */}
+      {/* Layer 1: The High-Fidelity Masterpiece (Restored Girl) */}
       <motion.div
         className="relative z-10 w-full h-full flex items-center justify-center"
         style={{ x: heroX, y: heroY }}
-        initial={{ opacity: 0, scale: 0.95, y: 30 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.5, ease: "easeOut" }}
       >
         <motion.img
           src="/assets/god-hero.png"
-          alt="Sovereign Protection - Relaxed User"
-          className="w-full h-full object-contain filter drop-shadow-[0_45px_120px_rgba(255,0,102,0.12)]"
+          alt="Sovereign Protection"
+          className="w-full h-full object-contain filter drop-shadow-[0_60px_150px_rgba(255,0,102,0.1)]"
           animate={{ 
-            y: [0, -25, 0],
+            y: [0, -15, 0],
           }}
           transition={{ 
-            duration: 12, 
+            duration: 8, 
             repeat: Infinity, 
             ease: "easeInOut" 
           }}
         />
 
-        {/* Layer 3: Dynamic Security Nodes (Parallax Bloom) */}
-        <motion.div style={{ x: nodeX, y: nodeY }} className="absolute inset-0 pointer-events-none">
-          {[
-            { top: '25%', left: '20%', delay: 0 },
-            { top: '75%', left: '80%', delay: 2 },
-            { top: '15%', left: '70%', delay: 4 },
-            { top: '60%', left: '15%', delay: 6 },
-          ].map((node, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-3 h-3 rounded-full"
-              style={{ 
-                top: node.top, 
-                left: node.left,
-                backgroundColor: '#FF0066',
-                boxShadow: '0 0 25px rgba(255, 0, 102, 0.6)'
-              }}
-              animate={{ 
-                scale: [1, 1.6, 1],
-                opacity: [0.3, 1, 0.3],
-                filter: ['blur(1px)', 'blur(3px)', 'blur(1px)']
-              }}
-              transition={{ 
-                duration: 5, 
-                repeat: Infinity, 
-                delay: node.delay,
-                ease: "easeInOut" 
-              }}
-            />
-          ))}
-        </motion.div>
-
-        {/* Ambient Orbiting Ring */}
+        {/* Security Shield (Geometric & Clean - No hair-like curves) */}
         <motion.div 
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] h-[95%] border-[0.6px] border-[#FF0066]/15 rounded-full"
+          className="absolute inset-x-[-5%] inset-y-[-5%] border-[0.8px] border-lemon/20 rounded-[80px] pointer-events-none z-0"
           animate={{ 
-            rotateZ: 360,
             scale: [1, 1.02, 1],
+            opacity: [0.3, 0.6, 0.3]
           }}
-          transition={{ 
-            rotateZ: { duration: 60, repeat: Infinity, ease: "linear" },
-            scale: { duration: 10, repeat: Infinity, ease: "easeInOut" }
-          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
       </motion.div>
-      
-      {/* Premium Silk Overlay */}
-      <div className="absolute inset-0 bg-white/[0.01] backdrop-blur-[1px] pointer-events-none rounded-[100px]" />
+
+      {/* Layer 2: Dynamic Security Nodes (Premium Parallax) */}
+      <motion.div style={{ x: nodeX, y: nodeY }} className="absolute inset-0 pointer-events-none z-20">
+        {[
+          { top: '20%', left: '15%', delay: 0 },
+          { top: '80%', left: '85%', delay: 2 },
+          { top: '10%', left: '75%', delay: 4 },
+          { top: '70%', left: '10%', delay: 6 },
+        ].map((node, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-4 h-4 rounded-full"
+            style={{ 
+              top: node.top, 
+              left: node.left,
+              backgroundColor: '#FF0066',
+              boxShadow: '0 0 30px rgba(255, 0, 102, 0.7)'
+            }}
+            animate={{ 
+              scale: [1, 1.5, 1],
+              opacity: [0.4, 0.9, 0.4],
+            }}
+            transition={{ 
+              duration: 4, 
+              repeat: Infinity, 
+              delay: node.delay,
+            }}
+          />
+        ))}
+      </motion.div>
     </div>
   );
 }
