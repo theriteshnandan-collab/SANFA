@@ -6,19 +6,13 @@ import { Shield, Mail, Lock, ArrowRight, Sparkles, Fingerprint } from 'lucide-re
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export const dynamic = 'force-dynamic';
-
-// Apple-Standard Spring Configurations
-const organicSpring = { type: "spring", stiffness: 300, damping: 30, mass: 1 } as any;
-const entranceSpring = { type: "spring", stiffness: 100, damping: 20, mass: 1 } as any;
-
+const lemonSpring = { type: "spring", stiffness: 400, damping: 30, mass: 1 } as any;
 
 const fadeInUp = {
-  initial: { opacity: 0, y: 30 },
+  initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
-  transition: organicSpring
+  transition: lemonSpring
 } as any;
-
 
 export default function LoginPage() {
   const supabase = createClient();
@@ -40,7 +34,7 @@ export default function LoginPage() {
     if (error) {
       setMessage({ type: 'error', text: error.message });
     } else {
-      setMessage({ type: 'success', text: 'Identity verified. Decrypting enclave...' });
+      setMessage({ type: 'success', text: 'Identity verified. Accessing vault...' });
       setTimeout(() => {
         window.location.href = '/dashboard';
       }, 1000);
@@ -64,68 +58,60 @@ export default function LoginPage() {
     if (error) {
       setMessage({ type: 'error', text: error.message });
     } else {
-      setMessage({ type: 'success', text: 'Verification link dispatched to your secure mail.' });
+      setMessage({ type: 'success', text: 'Check your email for the verification link.' });
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-[#030304] flex items-center justify-center p-8 selection:bg-gold-500/40 text-white overflow-hidden relative">
-      {/* God-Tier Ambience */}
-      <div className="fixed inset-0 pointer-events-none noise-fine z-50" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] bg-gold-500/[0.03] blur-[140px] rounded-full z-0" />
-
+    <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center p-6 selection:bg-lemon/10 text-[#111111]">
+      
       <motion.div 
-        initial={{ opacity: 0, scale: 0.98, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={entranceSpring}
-        className="w-full max-w-xl relative z-10"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={lemonSpring}
+        className="w-full max-w-md relative z-10"
       >
-        <div className="glass-card-v2 rounded-[64px] p-20 shadow-[0_0_100px_rgba(0,0,0,0.5)] border-white/[0.03] relative overflow-hidden text-center">
-          <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-gold-500/30 to-transparent" />
+        <div className="lemon-card p-12 md:p-16 text-center">
           
-          <div className="flex flex-col items-center mb-16">
+          <div className="flex flex-col items-center mb-12">
             <motion.div 
-              initial={{ rotate: -15, scale: 0.8 }}
+              initial={{ rotate: -10, scale: 0.8 }}
               animate={{ rotate: 0, scale: 1 }}
-              transition={organicSpring}
-              className="w-24 h-24 glass-v2 rounded-[3rem] flex items-center justify-center mb-8 border border-white/10"
+              transition={lemonSpring}
+              className="w-16 h-16 bg-lemon rounded-2xl flex items-center justify-center mb-8 shadow-lg shadow-lemon/20"
             >
-              <Shield className="text-gold-500 w-12 h-12" />
+              <Shield className="text-white w-8 h-8" />
             </motion.div>
             
             <motion.h1 
               variants={fadeInUp}
               initial="initial"
               animate="animate"
-              className="text-4xl font-serif text-aura mb-4 tracking-tight"
+              className="text-3xl font-black mb-4 tracking-tighter"
             >
-              Protocol Access
+              Welcome back.
             </motion.h1>
             
-            <motion.div 
+            <motion.p 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="flex items-center gap-4"
+              transition={{ delay: 0.2 }}
+              className="text-gray-400 font-bold text-xs uppercase tracking-widest"
             >
-              <Fingerprint className="w-4 h-4 text-gold-500/30" />
-              <p className="text-[11px] font-black uppercase tracking-[0.6em] text-white/20">Secure Asset Enclave Entry</p>
-            </motion.div>
+              Enter the SANFA Enclave
+            </motion.p>
           </div>
 
-          <form className="space-y-12 text-left">
+          <form className="space-y-8 text-left">
             <motion.div variants={fadeInUp} initial="initial" animate="animate" transition={{ delay: 0.2 }}>
-              <label className="block text-[11px] font-black uppercase tracking-[0.5em] text-white/30 mb-4 ml-2">Email Identity</label>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Email</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-white/20 group-focus-within:text-gold-500 transition-colors">
-                  <Mail className="w-5 h-5" />
-                </div>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-white/[0.02] border border-white/5 rounded-3xl py-6 pl-16 pr-8 text-white placeholder:text-white/10 focus:outline-none focus:border-gold-500/30 focus:bg-white/[0.04] transition-all font-sans text-base"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 px-6 text-[#111111] placeholder:text-gray-300 focus:outline-none focus:border-lemon/30 focus:bg-white transition-all font-sans text-sm"
                   placeholder="artist@sanfa.id"
                   required
                 />
@@ -133,16 +119,13 @@ export default function LoginPage() {
             </motion.div>
 
             <motion.div variants={fadeInUp} initial="initial" animate="animate" transition={{ delay: 0.3 }}>
-              <label className="block text-[11px] font-black uppercase tracking-[0.5em] text-white/30 mb-4 ml-2">Security Hash</label>
+              <label className="block text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2 ml-1">Password</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none text-white/20 group-focus-within:text-gold-500 transition-colors">
-                  <Lock className="w-5 h-5" />
-                </div>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-white/[0.02] border border-white/5 rounded-3xl py-6 pl-16 pr-8 text-white placeholder:text-white/10 focus:outline-none focus:border-gold-500/30 focus:bg-white/[0.04] transition-all font-sans text-base"
+                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 px-6 text-[#111111] placeholder:text-gray-300 focus:outline-none focus:border-lemon/30 focus:bg-white transition-all font-sans text-sm"
                   placeholder="••••••••"
                   required
                 />
@@ -155,12 +138,9 @@ export default function LoginPage() {
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className={`p-6 rounded-3xl text-[11px] font-black uppercase tracking-[0.4em] ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}
+                  className={`p-4 rounded-xl text-[10px] font-black uppercase tracking-widest ${message.type === 'success' ? 'bg-green-50 text-green-500 border border-green-100' : 'bg-red-50 text-red-500 border border-red-100'}`}
                 >
-                  <div className="flex items-center gap-4">
-                    <Sparkles className="w-5 h-5" />
-                    {message.text}
-                  </div>
+                  {message.text}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -170,22 +150,22 @@ export default function LoginPage() {
               initial="initial" 
               animate="animate" 
               transition={{ delay: 0.4 }}
-              className="flex gap-6 pt-6"
+              className="flex flex-col gap-4 pt-4"
             >
               <button
                 onClick={handleLogin}
                 disabled={loading}
-                className="flex-[2] bg-white hover:bg-gold-400 text-black font-black py-6 rounded-3xl transition-all flex items-center justify-center gap-4 group disabled:opacity-30 shadow-2xl uppercase tracking-widest"
+                className="btn-lemon w-full py-5 rounded-2xl flex items-center justify-center gap-4 group disabled:opacity-50"
               >
-                Engage
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                Sign In
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
               <button
                 onClick={handleSignUp}
                 disabled={loading}
-                className="flex-1 bg-white/[0.03] hover:bg-white/5 text-white font-black py-6 rounded-3xl border border-white/10 transition-all disabled:opacity-30 text-xs uppercase tracking-[0.3em]"
+                className="w-full bg-white text-gray-400 font-black py-4 rounded-2xl border border-gray-100 hover:bg-gray-50 transition-all disabled:opacity-50 text-xs uppercase tracking-widest"
               >
-                Join
+                Create Account
               </button>
             </motion.div>
           </form>
@@ -193,28 +173,28 @@ export default function LoginPage() {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="mt-20 pt-10 border-t border-white/[0.03]"
+            transition={{ delay: 0.6 }}
+            className="mt-12 pt-8 border-t border-gray-50"
           >
-            <Link href="/" className="text-white/20 hover:text-gold-500 transition-all text-xs font-black uppercase tracking-[0.8em]">
-              Core Protocol
+            <Link href="/" className="text-gray-300 hover:text-lemon transition-colors text-[10px] font-bold uppercase tracking-widest">
+              Back to Home
             </Link>
           </motion.div>
         </div>
         
-        {/* Verification Status */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="mt-12 flex justify-center"
+          transition={{ delay: 0.8 }}
+          className="mt-8 flex justify-center"
         >
-          <div className="flex items-center gap-4 px-6 py-3 bg-white/[0.03] rounded-full border border-white/5">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-ping" />
-            <span className="text-[10px] font-black text-white/20 uppercase tracking-[0.5em]">Identity Enclave Protection Active</span>
+          <div className="flex items-center gap-3 px-4 py-2 bg-white rounded-full shadow-sm border border-gray-100">
+            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Sovereign Protection Active</span>
           </div>
         </motion.div>
       </motion.div>
     </div>
   );
 }
+

@@ -4,68 +4,72 @@
 
 @layer base {
   :root {
-    /* God-Tier Palette (Apple Standard) */
-    --background: 240 10% 2%;     /* Deep OLED Black */
-    --foreground: 0 0% 98%;       /* Pure Off-White */
-    --card: 240 10% 2%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 2%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 43 53% 54%;        /* Burnished Gold */
-    --primary-foreground: 0 0% 9%;
-    --secondary: 240 3.7% 10%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 10%;
-    --muted-foreground: 240 5% 50%;
-    --accent: 43 53% 54%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 8%;
-    --input: 240 3.7% 8%;
-    --ring: 43 53% 54%;
-    --radius: 1.25rem;            /* More organic rounding */
+    /* Lemonade-Inspired Palette (Minimalist & Trustworthy) */
+    --background: 0 0% 100%;       /* Pure White */
+    --foreground: 0 0% 7%;         /* Dark Charcoal */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+    --primary: 335 100% 50%;      /* Electric Rose / Hot Pink */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 335 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 335 100% 50%;
+    --radius: 0.75rem;
 
-    /* Airy Typography (Apple Fluidity) */
-    --font-size-base: clamp(1rem, 0.5vw + 0.85rem, 1.125rem);
-    --font-size-lg: clamp(1.25rem, 1vw + 1.1rem, 1.75rem);
-    --font-size-xl: clamp(1.75rem, 2.5vw + 1.5rem, 2.75rem);
-    --font-size-2xl: clamp(2.5rem, 5vw + 2rem, 4.5rem);
-    --font-size-3xl: clamp(4rem, 8vw + 3rem, 7rem);
+    /* Lemonade Typography (Clean & Bold) */
+    --font-size-base: clamp(1rem, 0.4vw + 0.9rem, 1.125rem);
+    --font-size-lg: clamp(1.25rem, 0.8vw + 1.1rem, 1.5rem);
+    --font-size-xl: clamp(1.75rem, 1.5vw + 1.5rem, 2.5rem);
+    --font-size-2xl: clamp(2.5rem, 4vw + 2rem, 4rem);
+    --font-size-3xl: clamp(3.5rem, 6vw + 3rem, 6rem);
   }
 }
 
 @layer utilities {
-  .glass-v2 {
-    @apply bg-black/30 backdrop-blur-[40px] saturate-150 border border-white/[0.05];
+  .lemon-shadow {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   }
   
-  .glass-card-v2 {
-    @apply bg-white/[0.02] backdrop-blur-[30px] border border-white/[0.05] hover:border-white/[0.1] hover:bg-white/[0.04] transition-all duration-500;
+  .lemon-card {
+    @apply border-none lemon-shadow bg-white hover:-translate-y-1.5 hover:shadow-[0_10px_40px_rgba(0,0,0,0.08)] transition-all duration-300 ease-out;
   }
 
-  .text-aura {
-    @apply bg-clip-text text-transparent bg-gradient-to-b from-white via-white/90 to-white/60;
+  .text-lemon {
+    @apply text-[#FF0066];
   }
 
-  .glow-spectral {
-    background: radial-gradient(circle at center, hsla(43, 53%, 54%, 0.15) 0%, transparent 70%);
+  .bg-lemon {
+    @apply bg-[#FF0066];
   }
 
-  .noise-fine {
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    opacity: 0.05;
+  .btn-lemon {
+    @apply bg-[#FF0066] text-white hover:bg-[#E6005C] active:scale-95 transition-all duration-200 font-bold px-8 py-4 rounded-full;
   }
 }
 
 body {
-  @apply bg-[#030304] text-[#f3f4f6] font-sans antialiased selection:bg-[#C9A84C]/40;
+  @apply bg-[#FFFFFF] text-[#111111] font-sans antialiased;
   font-size: var(--font-size-base);
-  line-height: 1.7;           /* Airier leading */
-  letter-spacing: -0.01em;     /* Tighter Inter Tracking */
+  line-height: 1.6;
+  letter-spacing: -0.015em;
 }
 
-h1, h2, h3, h4, .font-serif {
-  @apply tracking-[-0.03em] leading-[1.05];
+h1, h2, h3, h4 {
+  @apply font-black tracking-[-0.04em] leading-[1.1] text-[#111111];
 }
+
+.sticky-nav {
+  @apply sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100;
+}
+
 

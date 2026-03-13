@@ -1,316 +1,303 @@
 'use client';
 
-import { Shield, Sparkles, Zap, Lock, Globe, Activity, Cpu, ArrowRight, ShieldCheck, Fingerprint, Eye, ZapOff } from 'lucide-react';
+import { Shield, Zap, Lock, Star, CheckCircle2, ArrowRight, Menu, X, Smile, Users, Heart } from 'lucide-react';
 import Link from 'next/link';
-import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
-import { useRef, useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import LineIllustration from '@/components/LineIllustration';
 
-// Apple-Standard Spring Configurations
-const organicSpring = { type: "spring", stiffness: 300, damping: 30, mass: 1 } as any;
-const entranceSpring = { type: "spring", stiffness: 100, damping: 20, mass: 1 } as any;
+// Lemonade-Standard Spring Configurations
+const lemonSpring = { type: "spring", stiffness: 400, damping: 30, mass: 1 } as any;
 
-
-const fadeInUp: any = {
-  hidden: { opacity: 0, y: 40 },
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
   visible: { 
     opacity: 1, 
     y: 0,
-    transition: { ...organicSpring }
+    transition: { ...lemonSpring }
   }
 };
 
-const staggerContainer: any = {
+const staggerContainer = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.2,
-      delayChildren: 0.3
+      staggerChildren: 0.15,
+      delayChildren: 0.2
     }
   }
 };
 
 export default function Home() {
-  const containerRef = useRef(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"]
-  });
-
-  const smoothProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30 });
-  const opacity = useTransform(smoothProgress, [0, 0.15], [1, 0]);
-  const scale = useTransform(smoothProgress, [0, 0.15], [1, 0.92]);
-
-  if (!isMounted) return <div className="min-h-screen bg-[#030304]" />;
+  if (!isMounted) return <div className="min-h-screen bg-white" />;
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-[#030304] selection:bg-gold-500/40 text-white overflow-x-hidden font-sans">
-      {/* God-Tier Atmosphere */}
-      <div className="fixed inset-0 pointer-events-none noise-fine z-[100]" />
-      <div className="fixed inset-0 pointer-events-none glow-spectral opacity-50 z-0" />
+    <div className="min-h-screen bg-white text-[#111111] overflow-x-hidden selection:bg-[#FF0066]/20">
       
-      {/* Navigation: Airy & Minimal */}
-      <motion.nav 
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ ...entranceSpring, delay: 0.1 }}
-        className="px-12 py-10 flex items-center justify-between fixed top-0 w-full z-[110] pointer-events-none"
-      >
-        <div className="flex items-center gap-6 pointer-events-auto group">
-          <div className="w-12 h-12 glass-v2 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-all duration-700 relative overflow-hidden">
-            <Shield className="text-gold-500 w-6 h-6 z-10" />
+      {/* Navigation: Sticky & Persistent */}
+      <nav className="sticky-nav px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2 group cursor-pointer">
+            <div className="w-10 h-10 bg-lemon rounded-xl flex items-center justify-center group-hover:rotate-12 transition-transform">
+              <Shield className="text-white w-5 h-5" />
+            </div>
+            <span className="text-2xl font-black tracking-tighter">SANFA</span>
           </div>
-          <div className="flex flex-col">
-            <span className="text-2xl font-serif tracking-tight leading-none">SANFA</span>
-            <span className="text-[10px] uppercase tracking-[0.6em] text-white/20 font-bold mt-2">Protocol Access</span>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-14 pointer-events-auto">
-          <div className="hidden md:flex items-center gap-12">
-            {['Architecture', 'Manifesto', 'Security'].map((item) => (
-              <Link key={item} href={`#${item.toLowerCase()}`} className="text-[11px] font-bold text-white/20 hover:text-white transition-all uppercase tracking-[0.3em]">{item}</Link>
-            ))}
-          </div>
-          <div className="flex items-center gap-6">
-            <Link href="/login" className="glass-v2 px-10 py-4 rounded-full text-xs font-bold uppercase tracking-[0.2em] hover:bg-white/5 transition-all text-white/60 hover:text-white">Access</Link>
-            <Link href="/login" className="bg-white text-black px-12 py-4 rounded-full text-xs font-black uppercase tracking-[0.3em] hover:scale-105 active:scale-95 transition-all shadow-2xl">Start Protection</Link>
-          </div>
-        </div>
-      </motion.nav>
 
-      <main className="relative z-10">
-        <section className="relative min-h-[110vh] flex flex-col items-center justify-center px-12">
-          <motion.div 
-            style={{ opacity, scale }}
-            variants={staggerContainer as any}
+          <div className="hidden md:flex items-center gap-10">
+            {['Protection', 'How it Works', 'Reviews'].map((item) => (
+              <Link key={item} href={`#${item.toLowerCase().replace(/ /g, '-')}`} className="text-sm font-bold text-gray-500 hover:text-black transition-colors">{item}</Link>
+            ))}
+            <Link href="/login" className="text-sm font-bold text-gray-400 hover:text-black transition-colors pl-6 border-l">Sign In</Link>
+            <Link href="/login" className="btn-lemon py-3 px-10 text-sm">Check Our Prices</Link>
+          </div>
+
+          <button className="md:hidden" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+            {isMobileMenuOpen ? <X /> : <Menu />}
+          </button>
+        </div>
+      </nav>
+
+      <main>
+        {/* Hero Section: Centered & Massive */}
+        <section className="py-24 md:py-40 px-6 container mx-auto text-center overflow-hidden">
+          <motion.div
             initial="hidden"
             animate="visible"
-            className="max-w-7xl mx-auto text-center"
+            variants={staggerContainer}
+            className="max-w-4xl mx-auto"
           >
-            <motion.div variants={fadeInUp as any} className="inline-flex items-center gap-4 px-8 py-3 rounded-full bg-white/[0.03] border border-white/[0.05] mb-12">
-              <Sparkles className="w-4 h-4 text-gold-500" />
-              <span className="text-[11px] font-bold text-white/40 uppercase tracking-[0.5em]">System V6.0 Ascent Active</span>
-            </motion.div>
-
-            <motion.h1 
-              variants={fadeInUp as any}
-              className="text-[var(--font-size-3xl)] font-serif mb-12 tracking-tighter leading-[0.8] text-aura py-4"
-            >
-              The Invisible <br /> <span className="text-gold-500 italic">Sovereignty.</span>
+            <motion.h1 variants={fadeInUp} className="text-[var(--font-size-3xl)] mb-8">
+              Forget everything you know about <span className="text-lemon">protection.</span>
             </motion.h1>
-
-            <motion.p 
-              variants={fadeInUp as any}
-              className="text-white/30 max-w-4xl mx-auto text-xl md:text-3xl font-sans leading-relaxed mb-16 tracking-tight text-balance"
-            >
-              We mathematically scramble every feature kernel to ensure your masterpiece is <span className="text-white/80 italic">mathematically indigestible</span> for neural networks.
+            
+            <motion.p variants={fadeInUp} className="text-xl md:text-2xl text-gray-500 mb-12 max-w-2xl mx-auto leading-relaxed">
+              Instant protection for your digital assets. No paperwork, no hassle, just pure mathematical sovereignty.
             </motion.p>
 
-            <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center gap-12">
-              <Link href="/login" className="group bg-white text-black px-16 py-8 rounded-full text-xl font-black uppercase tracking-widest hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-4 shadow-2xl">
-                Engage Protection
-                <ArrowRight className="w-6 h-6" />
+            <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-20">
+              <Link href="/login" className="btn-lemon text-lg px-12 py-6 w-full sm:w-auto">
+                Protect My Assets
               </Link>
-              <Link href="#manifesto" className="text-[12px] font-black uppercase tracking-[0.5em] text-white/20 hover:text-white transition-all flex items-center gap-4 border-b border-white/5 pb-2">
-                Manifesto 2026
-              </Link>
+              <div className="flex items-center gap-2 text-gray-400 font-bold text-sm">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                Takes 90 seconds
+              </div>
+            </motion.div>
+
+            <motion.div variants={fadeInUp} className="relative">
+               <LineIllustration className="max-w-2xl mx-auto" />
             </motion.div>
           </motion.div>
         </section>
 
-        <section id="architecture" className="py-60 relative overflow-hidden">
-          <div className="max-w-7xl mx-auto px-12">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-40 items-center">
-              <motion.div 
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, margin: "-200px" }}
-                variants={staggerContainer as any}
-              >
-                <motion.span variants={fadeInUp as any} className="text-gold-500 font-bold text-[11px] uppercase tracking-[0.6em] block mb-8">God-Tier Infrastructure</motion.span>
-                <motion.h2 variants={fadeInUp as any} className="text-[var(--font-size-2xl)] font-serif mb-12 leading-[0.9]">Serverless <br /> <span className="text-white/20">Frequency War.</span></motion.h2>
-                <motion.p variants={fadeInUp as any} className="text-white/30 text-2xl mb-20 leading-relaxed tracking-tight">
-                  By routing every protection job through decentralized spectral enclaves, we eliminate latent recognition signatures before they can be scraped.
-                </motion.p>
-                
-                <div className="space-y-14">
-                  {[
-                    { icon: Globe, title: 'Edge Supremacy', desc: 'Direct-to-enclave ingestion at the speed of light.' },
-                    { icon: Cpu, title: 'H100 Grid', desc: 'Serverless compute clusters processing at the frequency level.' },
-                    { icon: Activity, title: 'Spectral Feedback', desc: 'Real-time mathematical distance metrics.' }
-                  ].map((item, i) => (
-                    <motion.div 
-                      key={i}
-                      variants={fadeInUp as any}
-                      className="flex items-start gap-10 group"
-                    >
-                      <div className="w-16 h-16 rounded-3xl glass-v2 flex items-center justify-center border border-white/5 group-hover:border-gold-500/50 transition-all duration-700">
-                        <item.icon className="text-gold-500 w-7 h-7" />
-                      </div>
-                      <div>
-                        <h4 className="font-serif text-3xl mb-3 text-white/90">{item.title}</h4>
-                        <p className="text-white/20 text-lg">{item.desc}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-
-              <div className="grid grid-cols-2 gap-8 relative p-4">
-                <div className="space-y-8">
-                  <motion.div 
-                    whileHover={{ y: -8, scale: 1.02 }}
-                    transition={organicSpring}
-                    className="h-64 glass-card-v2 rounded-[48px] p-12 flex flex-col justify-end"
-                  >
-                    <span className="text-gold-500 font-serif text-6xl mb-4">99.9<span className="text-2xl opacity-40">%</span></span>
-                    <span className="text-white/20 text-[11px] font-bold uppercase tracking-[0.4em]">Uptime</span>
-                  </motion.div>
-                  <motion.div 
-                    whileHover={{ y: -8, scale: 1.02 }}
-                    transition={organicSpring}
-                    className="h-96 glass-card-v2 rounded-[48px] p-12 bg-gold-500/[0.04] border-gold-500/10 flex flex-col items-center justify-center text-center gap-10"
-                  >
-                    <Zap className="text-gold-500 w-20 h-20 animate-pulse" />
-                    <div className="flex flex-col gap-2">
-                       <span className="text-white font-serif text-5xl">200K</span>
-                       <span className="text-white/20 text-[11px] font-bold uppercase tracking-[0.4em]">Jobs / Mo</span>
-                    </div>
-                  </motion.div>
-                </div>
-                <div className="space-y-8 pt-20">
-                  <motion.div 
-                    whileHover={{ y: -8, scale: 1.02 }}
-                    transition={organicSpring}
-                    className="h-96 glass-card-v2 rounded-[48px] p-12 overflow-hidden relative group"
-                  >
-                    <div className="absolute inset-0 bg-white/[0.02] scale-y-0 group-hover:scale-y-100 transition-transform duration-1000 origin-bottom" />
-                    <div className="relative z-20 h-full flex flex-col justify-between">
-                      <Fingerprint className="text-white/40 w-16 h-16 group-hover:text-gold-500 transition-colors" />
-                      <div className="flex flex-col gap-4">
-                        <span className="text-white font-serif text-4xl leading-tight">C2PA Guard</span>
-                        <span className="text-white/20 text-[11px] font-bold uppercase tracking-[0.4em]">Immutable Origin</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                  <motion.div 
-                    whileHover={{ y: -8, scale: 1.02 }}
-                    transition={organicSpring}
-                    className="h-64 glass-card-v2 rounded-[48px] p-12 flex flex-col justify-center gap-6"
-                  >
-                    <div className="flex items-center gap-4">
-                       <div className="w-3 h-3 bg-gold-500 rounded-full animate-ping" />
-                       <span className="text-gold-500 text-[11px] font-bold uppercase tracking-widest">Spectral Active</span>
-                    </div>
-                    <span className="text-white font-serif text-3xl">6ms Feedback</span>
-                  </motion.div>
-                </div>
-              </div>
+        {/* Social Proof: Trust Banner */}
+        <section className="py-12 border-y border-gray-50 bg-[#FAFAFA]">
+          <div className="container mx-auto px-6 overflow-hidden">
+            <p className="text-center text-[10px] uppercase tracking-[0.4em] font-black text-gray-400 mb-10">Trusted and featured by the industry elite</p>
+            <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-30 grayscale transition-all hover:grayscale-0">
+               {['Forbes', 'Wired', 'The Verge', 'TechCrunch', 'Bloomberg'].map((logo) => (
+                 <span key={logo} className="text-2xl font-black tracking-tighter cursor-default">{logo}</span>
+               ))}
             </div>
           </div>
         </section>
 
-        <section id="security" className="py-60 px-12 text-center bg-black/20">
-          <div className="max-w-4xl mx-auto mb-32">
-            <span className="text-gold-500 font-bold text-[11px] uppercase tracking-[0.6em] block mb-10">Defense Protocols</span>
-            <h2 className="text-[var(--font-size-2xl)] font-serif text-aura">Impossible Extraction.</h2>
+        {/* Features: Card Grid */}
+        <section id="protection" className="py-32 px-6 container mx-auto">
+          <div className="text-center mb-24">
+             <h2 className="text-[var(--font-size-2xl)] mb-4">A new kind of <span className="text-lemon">safety.</span></h2>
+             <p className="text-gray-500 text-lg">We built it to be so simple, you'll actually use it.</p>
           </div>
 
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {[
-              { icon: Eye, title: 'Kernel Void', desc: 'Inverting the statistical kernels used by AI to recognize human-made features.' },
-              { icon: Lock, title: 'Spectral Noise', desc: 'Mathematical interference in the frequency domain, invisible to the eye, lethal to the model.' },
-              { icon: ZapOff, title: 'Style Decay', desc: 'Ensuring any extraction attempts cause catastrophic model failure and forgetting.' }
-            ].map((item, i) => (
-              <motion.div 
+              { icon: Shield, title: 'Total Anonymity', desc: 'We don\'t need your name. We just need to protect your masterpiece.' },
+              { icon: Zap, title: 'Instant Shield', desc: 'Response times under 100ms. Protection happens before the crawl ends.' },
+              { icon: Lock, title: 'Kernel Lock', desc: 'Advanced frequency-domain interference that makes duplication impossible.' }
+            ].map((feature, i) => (
+              <motion.div
                 key={i}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ ...organicSpring, delay: i * 0.15 }}
-                className="glass-card-v2 rounded-[56px] p-20 hover:border-gold-500/20 group"
+                transition={{ delay: i * 0.1, ...lemonSpring }}
+                className="lemon-card p-12 flex flex-col items-center text-center"
               >
-                <div className="w-24 h-24 glass-v2 rounded-[40px] flex items-center justify-center mb-12 mx-auto group-hover:bg-white/[0.05] transition-all duration-700">
-                  <item.icon className="text-white/20 w-12 h-12 group-hover:text-gold-500 transition-colors" />
+                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-8">
+                   <feature.icon className="text-lemon w-8 h-8" />
                 </div>
-                <h4 className="text-4xl font-serif mb-8 text-white">{item.title}</h4>
-                <p className="text-white/20 text-xl leading-relaxed">{item.desc}</p>
+                <h3 className="text-2xl font-black mb-4">{feature.title}</h3>
+                <p className="text-gray-500 leading-relaxed">{feature.desc}</p>
               </motion.div>
             ))}
           </div>
         </section>
 
-        <section id="manifesto" className="py-60 px-12">
-           <div className="max-w-6xl mx-auto glass-card-v2 rounded-[80px] p-32 border-white/[0.03] relative overflow-hidden">
-               <Shield className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-gold-500/[0.02] w-[800px] h-[800px] pointer-events-none" />
-               <div className="relative z-10 text-center">
-                  <h2 className="text-[var(--font-size-2xl)] font-serif mb-24 tracking-tighter text-aura">Sovereign <span className="text-gold-500">Manifesto.</span></h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-32 text-left">
-                     <div className="space-y-20">
-                        <div className="space-y-6">
-                           <span className="text-gold-500/40 font-serif text-5xl block italic mb-4">01.</span>
-                           <h3 className="text-4xl font-serif">Artificial Plunder.</h3>
-                           <p className="text-white/30 text-2xl leading-relaxed">Neural networks treat human genius as un-mined data. We treat it as digital property.</p>
-                        </div>
-                        <div className="space-y-6">
-                           <span className="text-gold-500/40 font-serif text-5xl block italic mb-4">02.</span>
-                           <h3 className="text-4xl font-serif">Mathematical Sanction.</h3>
-                           <p className="text-white/30 text-2xl leading-relaxed">If the law cannot protect the artist, the math must. SANFA is the technical deterrent.</p>
-                        </div>
+        {/* How it Works: Animation Section */}
+        <section id="how-it-works" className="py-32 px-6 bg-[#FAFAFA]">
+          <div className="container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+            <div className="order-2 lg:order-1">
+               <span className="text-lemon font-black text-[10px] uppercase tracking-[0.6em] block mb-6">Built for Creators</span>
+               <h2 className="text-[var(--font-size-2xl)] mb-8">Simple as <br /> <span className="text-lemon">Plug and Protect.</span></h2>
+               <div className="space-y-10">
+                  {[
+                    { step: '01', title: 'Connect Your Enclave', desc: 'Import your assets with a single click. We handle the technical layer.' },
+                    { step: '02', title: 'Deploy the Shield', desc: 'Choose your protection intensity from basic to total invisibility.' },
+                    { step: '03', title: 'Rest Easy', desc: 'Monitor your asset status in real-time while we fight the scrapers.' }
+                  ].map((step, i) => (
+                    <div key={i} className="flex gap-8 group">
+                       <span className="text-lemon/20 font-black text-6xl group-hover:text-lemon/40 transition-colors leading-none">{step.step}</span>
+                       <div>
+                          <h4 className="text-xl font-black mb-2">{step.title}</h4>
+                          <p className="text-gray-500">{step.desc}</p>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+            </div>
+            <div className="order-1 lg:order-2">
+               <div className="bg-white p-12 rounded-[40px] shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-8 flex gap-2">
+                     <span className="w-2 h-2 rounded-full bg-red-400" />
+                     <span className="w-2 h-2 rounded-full bg-yellow-400" />
+                     <span className="w-2 h-2 rounded-full bg-green-400" />
+                  </div>
+                  <LineIllustration className="scale-110 group-hover:scale-125 transition-transform duration-1000" />
+                  <div className="mt-8 pt-8 border-t flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                        <div className="w-3 h-3 bg-lemon rounded-full animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Live Protection</span>
                      </div>
-                     <div className="flex flex-col justify-center items-center p-20 glass-v2 rounded-[64px] border-white/5 gap-12">
-                        <p className="text-gold-500 font-serif text-4xl italic text-center leading-[1.1]">
-                           "Humanity is not <br /> training data."
-                        </p>
-                        <Link href="/login" className="bg-white text-black px-16 py-6 rounded-full text-sm font-black uppercase tracking-[0.4em] hover:scale-105 active:scale-95 transition-all">Engage Shield</Link>
-                     </div>
+                     <ArrowRight className="text-lemon w-6 h-6" />
                   </div>
                </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Reviews Section */}
+        <section id="reviews" className="py-32 px-6 container mx-auto">
+          <div className="text-center mb-24">
+             <div className="flex justify-center gap-1 mb-8">
+               {[1, 2, 3, 4, 5].map((s) => (
+                 <Star key={s} className="w-8 h-8 fill-lemon text-lemon" />
+               ))}
+             </div>
+             <h2 className="text-[var(--font-size-2xl)]">Rated 4.9/5 by over <br /> <span className="text-lemon">10,000 creators.</span></h2>
+          </div>
+
+          <div className="flex overflow-hidden group">
+             <div className="flex animate-scroll group-hover:pause-animation gap-8 pr-8">
+               {[
+                 { user: 'CreativeDir', text: 'Literally saved our entire portfolio from scraper exhaustion.' },
+                 { user: 'NexaStudio', text: 'The interface is so clean it actually feels like a relief to use.' },
+                 { user: 'Solis.eth', text: 'Mathematical sovereignty is the only way forward. SANFA is it.' },
+                 { user: 'HyperGlow', text: 'No paperwork. Just protection. Exactly what we needed.' },
+                 { user: 'EliteAI', text: 'Irony: An AI firm using SANFA to protect their internal models. It works.' },
+                 // Duplicate for infinite scroll effect
+                 { user: 'CreativeDir-2', text: 'Literally saved our entire portfolio from scraper exhaustion.' },
+                 { user: 'NexaStudio-2', text: 'The interface is so clean it actually feels like a relief to use.' },
+                 { user: 'Solis.eth-2', text: 'Mathematical sovereignty is the only way forward. SANFA is it.' }
+               ].map((review, i) => (
+                 <div key={i} className="lemon-card p-10 min-w-[350px] flex flex-col justify-between">
+                    <p className="text-lg font-medium mb-8">"{review.text}"</p>
+                    <div className="flex items-center gap-4">
+                       <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          <Smile className="text-lemon w-6 h-6" />
+                       </div>
+                       <span className="font-bold text-sm">@{review.user}</span>
+                    </div>
+                 </div>
+               ))}
+             </div>
+          </div>
+        </section>
+
+        {/* CTA Banner */}
+        <section className="py-32 px-6">
+           <div className="max-w-7xl mx-auto bg-lemon rounded-[60px] p-20 text-center text-white relative overflow-hidden group">
+              <div className="absolute top-0 left-0 w-full h-full bg-white/5 scale-x-0 group-hover:scale-x-100 transition-transform duration-1000 origin-left" />
+              <div className="relative z-10 flex flex-col items-center">
+                 <h2 className="text-[var(--font-size-2xl)] mb-8 text-white">Join the <span className="underline decoration-white/20">Sovereignty.</span></h2>
+                 <p className="text-xl md:text-2xl text-white/80 mb-12 max-w-xl mx-auto">It takes only 90 seconds. Protect your masterpiece before it's too late.</p>
+                 <Link href="/login" className="bg-white text-lemon px-16 py-8 rounded-full text-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-2xl">
+                    Get Protected Now
+                 </Link>
+              </div>
            </div>
         </section>
       </main>
 
-      <footer className="py-40 border-t border-white/[0.03] bg-black/40 px-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-24 text-center md:text-left">
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-4 justify-center md:justify-start">
-               <Shield className="text-gold-500/40 w-8 h-8" />
-               <span className="text-3xl font-serif tracking-tight">SANFA</span>
+      {/* Footer: Charcoal Minimalist */}
+      <footer className="bg-[#222222] text-white py-32 px-6">
+        <div className="container mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-20 mb-20">
+            <div className="col-span-1 md:col-span-1">
+               <div className="flex items-center gap-2 mb-8">
+                  <div className="w-10 h-10 bg-lemon rounded-xl flex items-center justify-center">
+                    <Shield className="text-white w-5 h-5" />
+                  </div>
+                  <span className="text-2xl font-black tracking-tighter">SANFA</span>
+               </div>
+               <p className="text-gray-400 text-sm leading-relaxed mb-10">
+                  Protecting human genius in the age of neural networks. Simple. Secure. Mathematical.
+               </p>
+               <div className="flex gap-6">
+                  <Users className="text-gray-500 hover:text-lemon cursor-pointer" />
+                  <Heart className="text-gray-500 hover:text-lemon cursor-pointer" />
+               </div>
             </div>
-            <p className="text-white/20 text-sm max-w-sm font-medium leading-relaxed uppercase tracking-widest">
-              Securing the human legacy in the age of algorithmic expansion.
-            </p>
+            
+            {['Product', 'Company', 'Legal'].map((col) => (
+              <div key={col}>
+                 <h5 className="font-black uppercase text-xs tracking-widest text-gray-500 mb-8">{col}</h5>
+                 <ul className="space-y-4">
+                    {['About Us', 'Protection Plan', 'Manifesto', 'Privacy Policy'].map((link) => (
+                      <li key={link}>
+                         <Link href="#" className="text-gray-400 hover:text-white transition-colors text-sm font-bold">{link}</Link>
+                      </li>
+                    ))}
+                 </ul>
+              </div>
+            ))}
           </div>
           
-          <div className="grid grid-cols-2 gap-16 md:gap-32">
-             <div className="flex flex-col gap-4">
-                <span className="text-gold-500 text-6xl font-serif">200K</span>
-                <span className="text-white/10 text-[10px] uppercase font-black tracking-[0.6em]">Assets Secured</span>
-             </div>
-             <div className="flex flex-col gap-4">
-                <span className="text-white text-6xl font-serif">99.9%</span>
-                <span className="text-white/10 text-[10px] uppercase font-black tracking-[0.6em]">Invisibility Rate</span>
+          <div className="pt-20 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-10">
+             <span className="text-gray-600 text-[10px] font-black uppercase tracking-[0.4em]">© 2026 SANFA PROTOCOL • HUMAN S-TIER ORIGINS</span>
+             <div className="flex items-center gap-1">
+                <span className="text-gray-600 text-xs">Built with</span>
+                <Heart className="text-lemon w-3 h-3 fill-lemon" />
+                <span className="text-gray-600 text-xs">for creators.</span>
              </div>
           </div>
-
-          <div className="flex gap-12">
-             {['Discord', 'X', 'Protocol'].map((item) => (
-                <Link key={item} href="#" className="text-[11px] font-bold text-white/20 hover:text-white transition-all uppercase tracking-[0.4em]">{item}</Link>
-             ))}
-          </div>
-        </div>
-        
-        <div className="max-w-7xl mx-auto pt-20 mt-20 border-t border-white/[0.02] text-center">
-           <span className="text-white/[0.05] text-[11px] font-bold uppercase tracking-[0.8em]">© 2026 THE ARCHITECT • SOVEREIGN ASSET ENCLAVE</span>
         </div>
       </footer>
+
+      {/* Animation Styles for Marquee */}
+      <style jsx global>{`
+        @keyframes scroll {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-scroll {
+          display: flex;
+          width: fit-content;
+          animation: scroll 40s linear infinite;
+        }
+        .pause-animation {
+          animation-play-state: paused;
+        }
+      `}</style>
     </div>
   );
 }
+
