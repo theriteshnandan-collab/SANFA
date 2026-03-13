@@ -1,12 +1,40 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useEffect } from "react";
 
 interface LineIllustrationProps {
   className?: string;
 }
 
 export default function LineIllustration({ className }: LineIllustrationProps) {
+  // Mouse tracking logic
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  // Smooth springs for high-end feel
+  const springX = useSpring(mouseX, { stiffness: 100, damping: 30 });
+  const springY = useSpring(mouseY, { stiffness: 100, damping: 30 });
+
+  // Parallax offsets for different elements
+  const pathX = useTransform(springX, [0, 1000], [-15, 15]);
+  const pathY = useTransform(springY, [0, 1000], [-10, 10]);
+  
+  const rectX = useTransform(springX, [0, 1000], [10, -10]);
+  const rectY = useTransform(springY, [0, 1000], [5, -5]);
+
+  const circleX = useTransform(springX, [0, 1000], [-5, 5]);
+  const circleY = useTransform(springY, [0, 1000], [15, -15]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX);
+      mouseY.set(e.clientY);
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
+
   return (
     <div className={className}>
       <motion.svg
@@ -20,6 +48,7 @@ export default function LineIllustration({ className }: LineIllustrationProps) {
       >
         {/* Simple Abstract Line-Art Representing Connectivity/Security */}
         <motion.path
+          style={{ x: pathX, y: pathY }}
           d="M50 150 C 50 50, 150 50, 150 150 S 250 250, 250 150 S 350 50, 350 150"
           stroke="#FF0066"
           strokeWidth="3"
@@ -34,6 +63,7 @@ export default function LineIllustration({ className }: LineIllustrationProps) {
           }}
         />
         <motion.rect
+          style={{ x: rectX, y: rectY }}
           x="140"
           y="110"
           width="20"
@@ -51,6 +81,7 @@ export default function LineIllustration({ className }: LineIllustrationProps) {
           }}
         />
         <motion.circle
+          style={{ x: circleX, y: circleY }}
           cx="250"
           cy="150"
           r="40"

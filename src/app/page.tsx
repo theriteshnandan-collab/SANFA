@@ -100,46 +100,56 @@ export default function Home() {
         </section>
 
         {/* Social Proof: Trust Banner */}
-        <section className="py-12 border-y border-gray-50 bg-[#FAFAFA]">
-          <div className="container mx-auto px-6 overflow-hidden">
-            <p className="text-center text-[10px] uppercase tracking-[0.4em] font-black text-gray-400 mb-10">Trusted and featured by the industry elite</p>
-            <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-30 grayscale transition-all hover:grayscale-0">
+        <motion.section 
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={staggerContainer}
+          className="py-12 border-y border-gray-50 bg-[#FAFAFA]"
+        >
+          <div className="container mx-auto px-6 overflow-hidden text-center">
+            <motion.p variants={fadeInUp} className="text-[10px] uppercase tracking-[0.4em] font-black text-gray-400 mb-10">Trusted and featured by the industry elite</motion.p>
+            <motion.div variants={fadeInUp} className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-30 grayscale transition-all hover:grayscale-0">
                {['Forbes', 'Wired', 'The Verge', 'TechCrunch', 'Bloomberg'].map((logo) => (
                  <span key={logo} className="text-2xl font-black tracking-tighter cursor-default">{logo}</span>
                ))}
-            </div>
+            </motion.div>
           </div>
-        </section>
+        </motion.section>
 
         {/* Features: Card Grid */}
         <section id="protection" className="py-32 px-6 container mx-auto">
-          <div className="text-center mb-24">
-             <h2 className="text-[var(--font-size-2xl)] mb-4">A new kind of <span className="text-lemon">safety.</span></h2>
-             <p className="text-gray-500 text-lg">We built it to be so simple, you'll actually use it.</p>
-          </div>
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+          >
+            <div className="text-center mb-24">
+               <motion.h2 variants={fadeInUp} className="text-[var(--font-size-2xl)] mb-4">A new kind of <span className="text-lemon">safety.</span></motion.h2>
+               <motion.p variants={fadeInUp} className="text-gray-500 text-lg">We built it to be so simple, you'll actually use it.</motion.p>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
-            {[
-              { icon: Shield, title: 'Total Anonymity', desc: 'We don\'t need your name. We just need to protect your masterpiece.' },
-              { icon: Zap, title: 'Instant Shield', desc: 'Response times under 100ms. Protection happens before the crawl ends.' },
-              { icon: Lock, title: 'Kernel Lock', desc: 'Advanced frequency-domain interference that makes duplication impossible.' }
-            ].map((feature, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1, ...lemonSpring }}
-                className="lemon-card p-12 flex flex-col items-center text-center"
-              >
-                <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-8">
-                   <feature.icon className="text-lemon w-8 h-8" />
-                </div>
-                <h3 className="text-2xl font-black mb-4">{feature.title}</h3>
-                <p className="text-gray-500 leading-relaxed">{feature.desc}</p>
-              </motion.div>
-            ))}
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+              {[
+                { icon: Shield, title: 'Total Anonymity', desc: 'We don\'t need your name. We just need to protect your masterpiece.' },
+                { icon: Zap, title: 'Instant Shield', desc: 'Response times under 100ms. Protection happens before the crawl ends.' },
+                { icon: Lock, title: 'Kernel Lock', desc: 'Advanced frequency-domain interference that makes duplication impossible.' }
+              ].map((feature, i) => (
+                <motion.div
+                  key={i}
+                  variants={fadeInUp}
+                  className="lemon-card p-12 flex flex-col items-center text-center"
+                >
+                  <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-8">
+                     <feature.icon className="text-lemon w-8 h-8" />
+                  </div>
+                  <h3 className="text-2xl font-black mb-4">{feature.title}</h3>
+                  <p className="text-gray-500 leading-relaxed">{feature.desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
         </section>
 
         {/* How it Works: Animation Section */}
@@ -300,4 +310,3 @@ export default function Home() {
     </div>
   );
 }
-
