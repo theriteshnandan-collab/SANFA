@@ -37,7 +37,7 @@ data/
 !next-env.d.ts
 !supabase_schema.sql
 *.png
-!public/*.png
+!public/**/*.png
 !src/**/*.png
 *.jpg
 *.jpeg
